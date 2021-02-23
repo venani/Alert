@@ -72,6 +72,16 @@ class Piece extends StatefulWidget {
     }
   }
 
+  void setCurPosToOrgPos()
+  {
+    state.setState(() {
+
+      top = oldTop;
+      left = oldLeft;
+    });
+
+  }
+
   bool atHome ()
   {
     if ((oldTop == top) && (oldLeft == left))

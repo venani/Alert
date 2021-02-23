@@ -29,6 +29,7 @@ class Choreographer
   int numVibrations = Level.getVibrationComplexity(1);
   Timeline timeline;
   int index = 0;
+  int gameTime;
 
   Choreographer ({this.lightCorridor, this.vibSoundCorridor, this.homePage}) {
     lightCorridor.setCallback(LightCallback);
@@ -85,6 +86,7 @@ class Choreographer
             }
           }
         }
+
         DateTime l1, l2;
         int itemToBeMovedBack;
         if (listOfIdlers.length > 1) {
@@ -97,6 +99,7 @@ class Choreographer
              itemToBeMovedBack = listOfIdlers[1];
            }
            //Move it back
+           // pieces[itemToBeMovedBack].setCurPosToOrgPos();
           pieces[itemToBeMovedBack].movePieceBackToOrgPosition();
         }
       }
@@ -105,7 +108,8 @@ class Choreographer
 
   void start() {
     curStatus = ChoreographerStatus.InProgress;
-    
+    gameTime = numberOfMinutes * 60;
+
     //Create timeline
     timeline = Timeline (1, 1, 1, lengthOfTimeLine: numberOfMinutes,numLights: numLights, numVibrations: numVibrations, numSounds: numSounds, numLightKeys: 6);
     timeline.create();
@@ -113,6 +117,11 @@ class Choreographer
 
     //Start timer
     Timer.periodic(Duration(milliseconds: 1000), (timer) {
+      if (gameTime > 1) {
+        gameTime -= 1;
+        homePage.state.setTimeRemaining(gameTime);
+      }
+
       //Get time unit
       Timeunit curTimeUnit = timeline.getTimeUnit(index);
       //Should we light on
@@ -122,13 +131,13 @@ class Choreographer
           print ('Turning light on at $index and light number is ${curTimeUnit.lightKey}');
         }
       }
-
       //Should we turn the light off
       if (curTimeUnit.lightActive) {
         if (curTimeUnit.stopLight) {
           lightCorridor.turnLightOff(curTimeUnit.lightKey);
         }
       }
+/*
 
       //Should we start the vibration
       if (curTimeUnit.vibrationActive) {
@@ -163,10 +172,10 @@ class Choreographer
       }
 
       //Should we stop the timer
-
+*/
       //Point to the next time slot
       index++;
-      if (index > 118) {
+      if (gameTime == 1) {
         timer.cancel();
         pieces.forEach((element) {element.setItInactive();});
         print ('Reached the end');
@@ -206,6 +215,11 @@ class Timeline {
     return timeUnitList[index];
   }
 
+  int getLengthOfTimeline()
+  {
+    return timeUnitList.length;
+  }
+
   List<int> ShuffleColumn(int numEntries, int defaultEntry, int colLength) {
     //Create the list
     List<int> workingList = List<int> (colLength);
@@ -242,6 +256,7 @@ class Timeline {
     for(int i=0; i <  timeUnitList.length; i++) {
       timeUnitList[i] = Timeunit();
     }
+
 
     //Setup light timeline
     int defaultLightEntry = 1000;
