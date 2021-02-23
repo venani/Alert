@@ -108,6 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String  lightCount = '23/56';
   String  vibrationCount = '23/56';
   String  soundCount = '23/56';
+  String  gameStatus;
 
   void playHandler() async {
     if (isPlaying) {
@@ -537,7 +538,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       Icon(Icons.lightbulb, color: Colors.white, size: 20.0),
                       Text('$lightCount', style: TextStyle(color: Colors.white),)])),
                     Expanded(flex: 3, child: Column( children: [
-                      Icon(Icons.vibration, color: Colors.white, size: 20.0),
+                      Icon(Icons.vibration, color: Colors.white, size: 20.0,),
                       Text('$vibrationCount', style: TextStyle(color: Colors.white),)])),
                     Expanded(flex: 3, child: Column( children: [
                       Icon(Icons.music_note, color: Colors.white, size: 20.0),
@@ -572,17 +573,71 @@ class _MyHomePageState extends State<MyHomePage> {
               Expanded(
                 flex: 3,
                 //child: Container(color: Colors.cyan))
-                child: FloatingActionButton(onPressed: () {
+                child: FloatingActionButton.extended(onPressed: () {
                   if (!widget.choreography.inProgress()) {
-                    widget.choreography.start();
+                    widget.choreography.setStatusToInProgress();
+                  } else if (widget.choreography.inProgress()) {
+                    widget.choreography.setStausToReady();
                   }
-                }),
+                },
+                label: Text('$gameStatus'), shape: CircleBorder(),
+                ),
               )
             ],
           ),
         ));
   }
 }
+
+class MindfullnessALertExcerciserApp {
+  final SharedPreferences storage;
+  MindfullnessALertExcerciserApp(this.storage);
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp (
+      home: StartApp(),
+      routes: <String, WidgetBuilder> {
+        '/InstructionsScreen' : (context) => Instructions()
+    }
+    );
+  }
+}
+
+class StartApp extends StatelessWidget {
+  StartApp();
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold (
+      appBar: AppBar(title: Text("Mindfulness Alertness Exerciser"),),
+      body: FlatButton(
+        child: Text("Instructions"),
+        color: Colors.green,
+        onPressed: () {
+          Navigator.pushNamed(context, '/InstructionsScreen');
+        }
+      )
+    );
+  }
+}
+
+class Instructions extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Instructions will come here"),)
+    );
+  }
+}
+
+class Scores extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(title: Text("Scores will come here"),)
+    );
+  }
+}
+
 
 // Stack(
 //   children: [

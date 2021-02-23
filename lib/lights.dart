@@ -113,7 +113,7 @@ class _LightState extends State<Light> {
             color: Colors.white,
             size: 20.0,
           ),
-
+          shape: new CircleBorder(),
           color: curColor,
         )
         //child: Text('A'),

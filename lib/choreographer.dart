@@ -34,6 +34,7 @@ class Choreographer
   Choreographer ({this.lightCorridor, this.vibSoundCorridor, this.homePage}) {
     lightCorridor.setCallback(LightCallback);
     vibSoundCorridor.setClickCallBack(VibSoundCallback);
+    setStausToReady();
   }
 
   void setPieces( List<Piece> curPieces) {
@@ -47,8 +48,37 @@ class Choreographer
     numberOfMinutes = numMinutes;
   }
 
+  void setStausToReady() {
+    curStatus = ChoreographerStatus.Dormant;
+    homePage.state.setState(() {
+      homePage.state.gameStatus = "Ready";
+    });
+  }
+
+  void setStatusToInProgress() {
+    curStatus = ChoreographerStatus.InProgress;
+    start();
+    homePage.state.setState(() {
+      homePage.state.gameStatus = "Cancel";
+    });
+  }
+
+  void setStatusToDone() {
+    curStatus = ChoreographerStatus.Ended;
+    homePage.state.setState(() {
+      homePage.state.gameStatus = "Start";
+    });
+  }
+
   bool inProgress () {
     if (curStatus == ChoreographerStatus.InProgress)
+      return true;
+    else
+      return false;
+  }
+
+  bool isEnded () {
+    if ((curStatus == ChoreographerStatus.Ended) || (curStatus == ChoreographerStatus.Dormant))
       return true;
     else
       return false;
@@ -70,7 +100,7 @@ class Choreographer
   void moveBackIdlePieces ()
   {
     Timer.periodic(Duration(milliseconds: 1000), (timer) {
-      if (curStatus == ChoreographerStatus.Ended)
+      if (isEnded())
         timer.cancel();
       else {
         //find the piece tha is not at home or destination\
@@ -107,7 +137,6 @@ class Choreographer
   }
 
   void start() {
-    curStatus = ChoreographerStatus.InProgress;
     gameTime = numberOfMinutes * 60;
 
     //Create timeline
@@ -117,7 +146,7 @@ class Choreographer
 
     //Start timer
     Timer.periodic(Duration(milliseconds: 1000), (timer) {
-      if (gameTime > 1) {
+      if (gameTime > 0) {
         gameTime -= 1;
         homePage.state.setTimeRemaining(gameTime);
       }
@@ -175,8 +204,9 @@ class Choreographer
 */
       //Point to the next time slot
       index++;
-      if (gameTime == 1) {
+      if ((gameTime == 0) || (isEnded())) {
         timer.cancel();
+        setStatusToDone();
         pieces.forEach((element) {element.setItInactive();});
         print ('Reached the end');
       }
