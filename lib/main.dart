@@ -17,11 +17,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'vibColumn.dart';
 import 'choreographer.dart';
 import 'package:slide_countdown_clock/slide_countdown_clock.dart';
+import 'level.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SharedPreferences storage = await SharedPreferences.getInstance();
-  runApp(MyApp(storage));
+  runApp(MindfullnessAlertExcerciserApp(storage));
 }
 
 class MyApp extends StatelessWidget {
@@ -57,11 +58,11 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   final String title;
-  final int rows = 4;
-  final int cols = 4;
+  int rows = 4;
+  int cols = 4;
+  int level;
   LightCorridor lightCorridor;
   VibSoundCorridor vibSoundCorridor;
-  List<Widget> widgetTree = List<Widget>();
   List<Piece> pieces = List<Piece>();
   List<Light> lightPieces = List<Light>();
   List<VibSoundButton> vibSoundButtons = List<VibSoundButton>();
@@ -71,7 +72,15 @@ class MyHomePage extends StatefulWidget {
   Choreographer choreography;
   _MyHomePageState state;
 
-  MyHomePage({Key key, this.title}) : super(key: key) {
+  MyHomePage ({ this.title});
+
+  void dispose () {
+    lightCorridor = null;
+    vibSoundCorridor = null;
+    pieces = null;
+    lightPieces = null;
+    vibSoundButtons = null;
+    state = null;
   }
 
   @override
@@ -105,10 +114,10 @@ class _MyHomePageState extends State<MyHomePage> {
   Size timerBarSize;
   String  timeRemaining = '120';
   String  puzzleCompletion = '100%';
-  String  lightCount = '23/56';
-  String  vibrationCount = '23/56';
-  String  soundCount = '23/56';
-  String  gameStatus;
+  String  lightCount = '0/0';
+  String  vibrationCount = '0/0';
+  String  soundCount = '0/0';
+  String  gameStatus = 'Temp';
 
   void playHandler() async {
     if (isPlaying) {
@@ -121,7 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
     void setPuzzleCompletion(int completedPieces, int totalPieces) {
       setState(() {
         double ratio = completedPieces * 100 / totalPieces;
-        puzzleCompletion = ratio.toStringAsPrecision(2);
+        puzzleCompletion = ratio.toInt().toString();
       });
     }
 
@@ -402,7 +411,7 @@ class _MyHomePageState extends State<MyHomePage> {
             bringToTop: bringToTop,
             sendToBack: sendToBack,
             updateState: updateState,
-            filter: false);
+            filter: true);
 
         piece2 = Piece(
             key: GlobalKey(),
@@ -462,6 +471,7 @@ class _MyHomePageState extends State<MyHomePage> {
     double screenHeight = MediaQuery.of(context).size.height;
     print("Screen width is $screenWidth, $screenHeight");
     print("setState is about to be set");
+    widget.pieces.forEach((element) {element.setItInactive();});
 
     setState(() {
       widget.pieces = widget.pieces;
@@ -482,17 +492,13 @@ class _MyHomePageState extends State<MyHomePage> {
     // );
     super.initState();
     print('initState');
-    Timer.periodic(Duration(milliseconds: 100), (timer) {
-      setState(() {
-        if (timerBarValue < timerBarTotalValue) {
-          timerBarValue += 10;
-        }
-        else {
-          timer.cancel();
-        }
-      });
-    });
   }
+
+  void dispose () {
+    super.dispose();
+    print ("dispose is called");
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -505,99 +511,172 @@ class _MyHomePageState extends State<MyHomePage> {
 
     print("size of pieces is ${widget.pieces.length}");
 
-    return Scaffold(
-        appBar: AppBar(
-          //Here we take the value from the MyHomePage object that was created by
-          //the App.build method, and use it to set our appbar title.
-          title: Text(widget.title),
-          leading: IconButton(
-            icon: Icon(Icons.menu),
-            onPressed: () {},
-          ),
-        ),
-        body: Container(
-          decoration: new BoxDecoration(
-              gradient: new LinearGradient(
-                  colors: [const Color(0xFF000046), const Color(0xFF1CB5E0)],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft)),
-          child: Column(
-            children: [
-              Expanded(
-                flex: 1,
-                child: Row(
-                    key: timerKey,
-                  children: [
-                    Expanded(flex: 3, child: Column( children: [
-                      Text('Time-sec', style: TextStyle(color: Colors.white),),
-                      Text('$timeRemaining', style: TextStyle(color: Colors.white),)])),
-                    Expanded(flex: 3, child: Column( children: [
-                      Text('Comp %',style: TextStyle(color: Colors.white)),
-                      Text('$puzzleCompletion', style: TextStyle(color: Colors.white),)])),
-                    Expanded(flex: 3, child: Column( children: [
-                      Icon(Icons.lightbulb, color: Colors.white, size: 20.0),
-                      Text('$lightCount', style: TextStyle(color: Colors.white),)])),
-                    Expanded(flex: 3, child: Column( children: [
-                      Icon(Icons.vibration, color: Colors.white, size: 20.0,),
-                      Text('$vibrationCount', style: TextStyle(color: Colors.white),)])),
-                    Expanded(flex: 3, child: Column( children: [
-                      Icon(Icons.music_note, color: Colors.white, size: 20.0),
-                      Text('$soundCount', style: TextStyle(color: Colors.white))])),
-                  ]
-                )
-              ),
+    GameArguments args = ModalRoute.of(context).settings.arguments;
+    widget.level = args.levelNumber;
+    widget.rows = Level.getPuzzleComplexity(args.levelNumber);
 
-              Expanded(
-                flex: 18,
-                child: Row(
-                  children: [
-                    Expanded(
-                        flex: 1,
-                        key: lightCorridorKey,
-                        child: Container(
-                            color: Colors.transparent,
-                            child: Stack(children: widget.lightPieces))),
-                    Expanded(
-                        key: puzzleKey,
-                        flex: 8,
-                        child: Stack(children: widget.pieces)),
-                    Expanded(
-                        key: vibSoundCorridorKey,
-                        flex: 1,
-                        child: Container(
-                            color: Colors.transparent,
-                            child: Stack(children: widget.vibSoundButtons))),
-                  ],
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                //child: Container(color: Colors.cyan))
-                child: FloatingActionButton.extended(onPressed: () {
-                  if (!widget.choreography.inProgress()) {
-                    widget.choreography.setStatusToInProgress();
-                  } else if (widget.choreography.inProgress()) {
-                    widget.choreography.setStausToReady();
-                  }
-                },
-                label: Text('$gameStatus'), shape: CircleBorder(),
-                ),
-              )
-            ],
+    return WillPopScope (
+      onWillPop: () {
+        if (widget.choreography.isReady())
+          return Future.value(true);
+        else
+          return Future.value(false);
+      },
+      child: Scaffold(
+          appBar: AppBar(
+            //Here we take the value from the MyHomePage object that was created by
+            //the App.build method, and use it to set our appbar title.
+            title: Text(widget.title),
           ),
-        ));
+          body: Container(
+            decoration: new BoxDecoration(
+                gradient: new LinearGradient(
+                    colors: [const Color(0xFF000046), const Color(0xFF1CB5E0)],
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft)),
+            child: Column(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Row(
+                      key: timerKey,
+                    children: [
+                      Expanded(flex: 3, child: Column( children: [
+                        Text('Time-sec', style: TextStyle(color: Colors.white),),
+                        Text('$timeRemaining', style: TextStyle(color: Colors.white),)])),
+                      Expanded(flex: 3, child: Column( children: [
+                        Text('Comp %',style: TextStyle(color: Colors.white)),
+                        Text('$puzzleCompletion', style: TextStyle(color: Colors.white),)])),
+                      Expanded(flex: 3, child: Column( children: [
+                        Icon(Icons.lightbulb, color: Colors.white, size: 20.0),
+                        Text('$lightCount', style: TextStyle(color: Colors.white),)])),
+                      Expanded(flex: 3, child: Column( children: [
+                        Icon(Icons.vibration, color: Colors.white, size: 20.0,),
+                        Text('$vibrationCount', style: TextStyle(color: Colors.white),)])),
+                      Expanded(flex: 3, child: Column( children: [
+                        Icon(Icons.music_note, color: Colors.white, size: 20.0),
+                        Text('$soundCount', style: TextStyle(color: Colors.white))])),
+                    ]
+                  )
+                ),
+
+                Expanded(
+                  flex: 18,
+                  child: Row(
+                    children: [
+                      Expanded(
+                          flex: 1,
+                          key: lightCorridorKey,
+                          child: Container(
+                              color: Colors.transparent,
+                              child: Stack(children: widget.lightPieces))),
+                      Expanded(
+                          key: puzzleKey,
+                          flex: 8,
+                          child: Stack(children: widget.pieces)),
+                      Expanded(
+                          key: vibSoundCorridorKey,
+                          flex: 1,
+                          child: Container(
+                              color: Colors.transparent,
+                              child: Stack(children: widget.vibSoundButtons))),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    children: [
+                      Spacer(flex: 1),
+                      FloatingActionButton.extended(onPressed: () {
+                        if (widget.choreography.isReady()) {
+                          widget.choreography.setStatusToProgress();
+                        } else if (widget.choreography.isProgressing()) {
+
+                          bool cancel = false;
+
+                          Widget cancelButton = FlatButton(
+                            child: Text("Yes"),
+                            onPressed:  () {
+                              cancel = true;
+                            },
+                          );
+
+                          Widget continueButton = FlatButton(
+                            child: Text("No"),
+                            onPressed:  () {
+                              cancel = false;
+                            },
+                          );
+
+                          AlertDialog alert = AlertDialog(
+                            title: Text("AlertDialog"),
+                            content: Text("Do you really want to cancel?"),
+                            actions: [
+                              cancelButton,
+                              continueButton,
+                            ],
+                          );
+
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return alert;
+                            },
+                          );
+
+                          if (!cancel) {
+                            widget.choreography.setStatusToReady();
+                            Navigator.pop(context);
+                          }
+                        }
+                      },
+                      label: Text('$gameStatus'), //shape: RoundedRectangleBorder(),
+                      ),
+                      Spacer(flex: 1)
+                    ],
+                  ),
+                )
+              ],
+            ),
+          )),
+    );
   }
 }
 
-class MindfullnessALertExcerciserApp {
+showAlertDialog (BuildContext context) {
+  // set up the buttons
+  Widget cancelButton = FlatButton(
+    child: Text("Yes"),
+    onPressed:  () {},
+  );
+  Widget continueButton = FlatButton(
+    child: Text("No"),
+    onPressed:  () {},
+  );
+  // set up the AlertDialog
+  AlertDialog alert = AlertDialog(
+    title: Text("AlertDialog"),
+    content: Text("Do you really want to cancel?"),
+    actions: [
+      cancelButton,
+      continueButton,
+    ],
+  );
+  // show the dialog
+}
+
+
+class MindfullnessAlertExcerciserApp extends StatelessWidget {
   final SharedPreferences storage;
-  MindfullnessALertExcerciserApp(this.storage);
+  MindfullnessAlertExcerciserApp(this.storage);
   @override
   Widget build(BuildContext context) {
     return MaterialApp (
       home: StartApp(),
       routes: <String, WidgetBuilder> {
-        '/InstructionsScreen' : (context) => Instructions()
+        '/InstructionsScreen' : (context) => Instructions(),
+        '/AlertGameScreen' : (context) => MyHomePage(title: "Mindfulness Alertness Exerciser"),
     }
     );
   }
@@ -609,12 +688,23 @@ class StartApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold (
       appBar: AppBar(title: Text("Mindfulness Alertness Exerciser"),),
-      body: FlatButton(
-        child: Text("Instructions"),
-        color: Colors.green,
-        onPressed: () {
-          Navigator.pushNamed(context, '/InstructionsScreen');
-        }
+      body: Column(
+        children: [
+          FlatButton(
+            child: Text("Instructions"),
+            color: Colors.green,
+            onPressed: () {
+              Navigator.pushNamed(context, '/InstructionsScreen');
+            }
+          ),
+          FlatButton(
+              child: Text("Alert Game Screen"),
+              color: Colors.green,
+              onPressed: () {
+                Navigator.pushNamed(context, '/AlertGameScreen', arguments: GameArguments(1));
+              }
+          ),
+        ],
       )
     );
   }
@@ -638,6 +728,10 @@ class Scores extends StatelessWidget {
   }
 }
 
+class GameArguments {
+  final levelNumber;
+  GameArguments(this.levelNumber);
+}
 
 // Stack(
 //   children: [

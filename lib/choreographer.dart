@@ -9,9 +9,8 @@ import 'main.dart';
 import 'piece.dart';
 
 enum ChoreographerStatus {
-  Dormant,
+  Ready,
   InProgress,
-  Ended
 }
 
 class Choreographer
@@ -21,7 +20,7 @@ class Choreographer
   final MyHomePage homePage;
   List<Piece> pieces;
 
-  ChoreographerStatus curStatus = ChoreographerStatus.Dormant;
+  ChoreographerStatus curStatus = ChoreographerStatus.Ready;
   int numberOfMinutes = 2;
   int level = 1;
   int numLights = Level.getLightsComplexity(1);
@@ -30,11 +29,32 @@ class Choreographer
   Timeline timeline;
   int index = 0;
   int gameTime;
+  bool timer1InProgress = false;
+  bool timer2InProgress = false;
+  int lastLightKey = 0;
+  int lastVibrationKey = 0;
+  int lastSoundKey = 0;
+  int totalLightKeys = 0;
+  int totalVibrationKeys = 0;
+  int totalSoundKeys = 0;
+  int curLightKeys = 0;
+  int curVibrationKeys = 0;
+  int curSoundKeys = 0;
 
   Choreographer ({this.lightCorridor, this.vibSoundCorridor, this.homePage}) {
     lightCorridor.setCallback(LightCallback);
     vibSoundCorridor.setClickCallBack(VibSoundCallback);
-    setStausToReady();
+    setStatusToReady();
+  }
+
+  bool areTheTimersStopped()
+  {
+    return timer1InProgress && timer2InProgress;
+  }
+
+  void dispose ()
+  {
+    print ("class Choreographer dispose");
   }
 
   void setPieces( List<Piece> curPieces) {
@@ -48,14 +68,21 @@ class Choreographer
     numberOfMinutes = numMinutes;
   }
 
-  void setStausToReady() {
-    curStatus = ChoreographerStatus.Dormant;
+  void setStatusToReady() {
     homePage.state.setState(() {
-      homePage.state.gameStatus = "Ready";
+      curStatus = ChoreographerStatus.Ready;
+      homePage.state.gameStatus = "Start the test";
+      if ((pieces != null) && (pieces.length != 0)) {
+        pieces.forEach((element) {
+          element.setItInactive();
+        });
+        movePuzzlePiecesBack();
+      }
+      lightCorridor.clearAllLights();
     });
   }
 
-  void setStatusToInProgress() {
+  void setStatusToProgress() {
     curStatus = ChoreographerStatus.InProgress;
     start();
     homePage.state.setState(() {
@@ -63,22 +90,15 @@ class Choreographer
     });
   }
 
-  void setStatusToDone() {
-    curStatus = ChoreographerStatus.Ended;
-    homePage.state.setState(() {
-      homePage.state.gameStatus = "Start";
-    });
-  }
-
-  bool inProgress () {
+  bool isProgressing () {
     if (curStatus == ChoreographerStatus.InProgress)
       return true;
     else
       return false;
   }
 
-  bool isEnded () {
-    if ((curStatus == ChoreographerStatus.Ended) || (curStatus == ChoreographerStatus.Dormant))
+  bool isReady () {
+    if (curStatus == ChoreographerStatus.Ready)
       return true;
     else
       return false;
@@ -94,27 +114,42 @@ class Choreographer
   }
 
   void LightCallback (int key) {
+    lastLightKey = key;
       print ("The key is $key");
   }
 
   void moveBackIdlePieces ()
   {
     Timer.periodic(Duration(milliseconds: 1000), (timer) {
-      if (isEnded())
+      print ("moveBackIdlePieces timer");
+      if (isReady()) {
         timer.cancel();
+        timer1InProgress = true;
+      }
       else {
         //find the piece tha is not at home or destination\
         bool atHome, atDestination, noIdlePiecesFound;
         noIdlePiecesFound = false;
+        int totalPuzzlePieces = homePage.cols * homePage.rows;
+        int numOfCompletedPieces = 0;
         List<int> listOfIdlers = List<int>();
         for (int i = 0; i < pieces.length; i++) {
-          if (pieces[i].isMovable) {
-            atHome = pieces[i].atHome();
-            atDestination = pieces[i].atDestination();
-            if (!(atHome || atDestination)) {
-              listOfIdlers.add(i);
+          if (!pieces[i].filter) {
+            if (pieces[i].isMovable) {
+              atHome = pieces[i].atHome();
+              atDestination = pieces[i].atDestination();
+              if (!(atHome || atDestination)) {
+                listOfIdlers.add(i);
+              }
+            } else {
+              numOfCompletedPieces++;
             }
           }
+        }
+
+        homePage.state.setPuzzleCompletion(numOfCompletedPieces, totalPuzzlePieces);
+        if (numOfCompletedPieces == totalPuzzlePieces) {
+          setStatusToReady();
         }
 
         DateTime l1, l2;
@@ -136,13 +171,32 @@ class Choreographer
     });
   }
 
+  void movePuzzlePiecesBack ()
+  {
+    for (int i = 0; i < pieces.length; i++) {
+      if (!pieces[i].filter) {
+        if (!pieces[i].isMovable) {
+          pieces[i].setCurPosToOrgPos();
+        }
+      }
+    }
+  }
+
   void start() {
     gameTime = numberOfMinutes * 60;
+    totalLightKeys = totalSoundKeys = totalVibrationKeys = 0;
+    curLightKeys = curSoundKeys = curVibrationKeys = 0;
+
 
     //Create timeline
-    timeline = Timeline (1, 1, 1, lengthOfTimeLine: numberOfMinutes,numLights: numLights, numVibrations: numVibrations, numSounds: numSounds, numLightKeys: 6);
+    timeline = Timeline (2, 2, 2, lengthOfTimeLine: numberOfMinutes,numLights: numLights, numVibrations: numVibrations, numSounds: numSounds, numLightKeys: 6);
     timeline.create();
     index = 0;
+
+    //Update light counts
+    homePage.state.setLightCount(curLightKeys, totalLightKeys);
+    homePage.state.setVibrationCount(curVibrationKeys, totalVibrationKeys);
+    homePage.state.setSoundCount(curSoundKeys, totalSoundKeys);
 
     //Start timer
     Timer.periodic(Duration(milliseconds: 1000), (timer) {
@@ -150,24 +204,39 @@ class Choreographer
         gameTime -= 1;
         homePage.state.setTimeRemaining(gameTime);
       }
+      if (gameTime == 0) {
+        setStatusToReady();
+      }
+      if (isReady()) {
+        timer.cancel();
+        timer2InProgress = true;
+      } else {
+        //Get time unit
+        Timeunit curTimeUnit = timeline.getTimeUnit(index);
+        //Should we light on
+        if (curTimeUnit.lightActive) {
+          if (curTimeUnit.startLight) {
+            lightCorridor.turnLightOn(curTimeUnit.lightKey);
+            totalLightKeys+=1;
+            homePage.state.setLightCount(curLightKeys, totalLightKeys);
+            print ('Turning light on at $index and light number is ${curTimeUnit.lightKey}');
+          }
+        }
+        //Should we turn the light off
+        if (curTimeUnit.lightActive) {
+          if (curTimeUnit.stopLight) {
+            lightCorridor.turnLightOff(curTimeUnit.lightKey);
+            if (lastLightKey != 0) {
+              if (lastLightKey == curTimeUnit.lightKey) {
+                curLightKeys+=1;
+              homePage.state.setLightCount(curLightKeys, totalLightKeys);
+              }
+              lastLightKey = 0;
+            }
+          }
+        }
 
-      //Get time unit
-      Timeunit curTimeUnit = timeline.getTimeUnit(index);
-      //Should we light on
-      if (curTimeUnit.lightActive) {
-        if (curTimeUnit.startLight) {
-          lightCorridor.turnLightOn(curTimeUnit.lightKey);
-          print ('Turning light on at $index and light number is ${curTimeUnit.lightKey}');
-        }
-      }
-      //Should we turn the light off
-      if (curTimeUnit.lightActive) {
-        if (curTimeUnit.stopLight) {
-          lightCorridor.turnLightOff(curTimeUnit.lightKey);
-        }
-      }
 /*
-
       //Should we start the vibration
       if (curTimeUnit.vibrationActive) {
         if (curTimeUnit.startVibrations) {
@@ -184,6 +253,7 @@ class Choreographer
         }
       }
 
+*/
       //Should we start the sound
       if (curTimeUnit.soundActive) {
         if (curTimeUnit.startSounds) {
@@ -201,14 +271,9 @@ class Choreographer
       }
 
       //Should we stop the timer
-*/
-      //Point to the next time slot
-      index++;
-      if ((gameTime == 0) || (isEnded())) {
-        timer.cancel();
-        setStatusToDone();
-        pieces.forEach((element) {element.setItInactive();});
-        print ('Reached the end');
+
+        //Point to the next time slot
+        index++;
       }
     });
     moveBackIdlePieces();

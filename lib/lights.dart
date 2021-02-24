@@ -16,11 +16,17 @@ class LightCorridor
   LightCorridor(this.lightCorridorSize, this.numberOfLights, this.updateState) {
   }
 
+  void clearAllLights() {
+    if ((lightList != null) && (lightList.length != 0)) {
+      lightList.forEach((element) {element.state.setColor(ColorStates.Inactive);});
+    }
+  }
+
   List<Light> getList() {
     lightList = List<Light>();
     Light curLight;
     for (int index=0; index < numberOfLights; index++) {
-      curLight = Light(id: index, topPos: (lightCorridorSize.height * (index+1) / (numberOfLights+1)), updateState: updateState,
+      curLight = Light(id: index+1, topPos: (lightCorridorSize.height * (index+1) / (numberOfLights+1)), updateState: updateState,
           lightCorridorSize: lightCorridorSize);
       curLight.lightCallback = lightCallback;
       lightList.add (curLight);

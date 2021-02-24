@@ -17,8 +17,8 @@ class VibSoundCorridor
   final int numberOfVibSoundButtons;
   final Function updateState;
   Function clickCallback;
-  AudioPlayer audioPlayer;
-  AudioCache audioCache = AudioCache();
+  //AudioPlayer audioPlayer = AudioPlayer();
+  //AudioCache audioCache = AudioCache();
 
   VibSoundCorridor(this.vibCorridorSize, this.numberOfVibSoundButtons, this.updateState) {
   }
@@ -54,12 +54,12 @@ class VibSoundCorridor
 
   void turnSoundsOn() async {
     print ('turnSoundsOn');
-    audioPlayer = await audioCache.play('sound/mind.mp3');
+    //audioPlayer = await audioCache.play('sound/mind.mp3');
   }
 
   void turnSoundsOff() {
     print ('turnSoundsOff');
-    audioPlayer.stop();
+    //audioPlayer.stop();
   }
 }
 
