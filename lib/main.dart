@@ -113,6 +113,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Size lightCorridorSize;
   Size vibSoundCorridorSize;
   Choreographer choreography;
+  List<Piece> lowerPieces;
+  bool needToReshuffle = true;
 
   void playHandler() async {
     if (isPlaying) {
@@ -391,9 +393,8 @@ class _MyHomePageState extends State<MyHomePage> {
     vibSoundButtons.addAll(vibSoundCorridor.getList());
 
     double xScale = imageSize.width / puzzleSize.width;
-    double yScale = imageSize.height / puzzleSize.height;
+    double yScale = imageSize.height / (puzzleSize.height/2);
     double xCenterOffset = (xScale > yScale) ? 0.0 : (puzzleSize.width - imageSize.width/yScale)/2;
-    double extraSpace = 2.0 * xCenterOffset / (cols - 1);
     Size pieceSize = Size(puzzleSize.height*imageSize.width/ (imageSize.height*cols), puzzleSize.height / rows);
     Piece piece1, piece2;
     List<Piece> tempList2 = List<Piece>();
@@ -416,8 +417,6 @@ class _MyHomePageState extends State<MyHomePage> {
             updateState: updateState,
             xCenterOffset: xCenterOffset,
             pieceSize: pieceSize,
-            initLeft: 0.0,
-            initTop: 0.0,
             filter: true);
 
         piece2 = Piece(
@@ -435,16 +434,12 @@ class _MyHomePageState extends State<MyHomePage> {
             updateState: updateState,
             xCenterOffset: xCenterOffset,
             pieceSize: pieceSize,
-            initLeft: ((x - tempList2[index].col) * pieceSize.width - xCenterOffset) + x * extraSpace,
-            initTop: (y - tempList2[index].row) * pieceSize.height + puzzleSize.height / 2,
             filter: false);
         pieces.add(piece1);
         tempList2.add(piece2);
       }
     }
-
-    tempList2.shuffle();
-
+/*
     pieces.add(Piece(
         key: GlobalKey(),
         image: backgroundImage,
@@ -461,16 +456,32 @@ class _MyHomePageState extends State<MyHomePage> {
         xCenterOffset: xCenterOffset,
         pieceSize: pieceSize,
         filter: true));
-
+*/
+    tempList2.shuffle();
+    double extraSpace =
+        2.0 * pieces[0].xCenterOffset / (cols - 1);
+    for (int x = 0; x < cols; x++) {
+      for (int y = 0; y < rows; y++) {
+        int index = x * rows + y;
+        tempList2[index].left =
+            tempList2[index].xCenterOffset + ((x - tempList2[index].col) * tempList2[index].pieceSize.width -
+                tempList2[index].xCenterOffset) +
+                x * extraSpace;
+        tempList2[index].top =
+            (y - tempList2[index].row) * tempList2[index].pieceSize.height +
+                puzzleSize.height / 2;
+      }
+    }
     pieces.addAll(tempList2);
+
     pieces.forEach((eachPiece) {eachPiece.state.setOrgPosition(); });
+    pieces.forEach((element) {element.state.setItInactive();});
 
     choreography.setPieces (pieces);
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
     print("Screen width is $screenWidth, $screenHeight");
-    print("setState is about to be set");
-    pieces.forEach((element) {element.state.setItInactive();});
+
 
     setState(() {
       pieces = pieces;
@@ -498,6 +509,31 @@ class _MyHomePageState extends State<MyHomePage> {
     print ("dispose is called");
   }
 
+  // void shuffleLowerPieces ()
+  // {
+  //   setState(() {
+  //     List<Piece> lowerPieces = List<Piece>();
+  //     List<Piece> upperPieces = List<Piece>();
+  //     int length = pieces.length;
+  //
+  //     double extraSpace = 2.0 * pieces[0].xCenterOffset / (cols - 1);
+  //
+  //     //remove the bottom half
+  //     int limit = ((length/2)-1).toInt()+1;
+  //     upperPieces = pieces.sublist(0, limit);
+  //     lowerPieces = pieces.sublist(limit);
+  //     lowerPieces.shuffle();
+  //     for (int x = 0; x < cols; x++) {
+  //       for (int y = 0; y < rows; y++) {
+  //         int index = x * rows + y;
+  //         lowerPieces[index].initLeft = lowerPieces[index].xCenterOffset + ((x - lowerPieces[index].col) * lowerPieces[index].pieceSize.width - lowerPieces[index].xCenterOffset) + x * extraSpace;
+  //         lowerPieces[index].initTop  = (y - lowerPieces[index].row) * lowerPieces[index].pieceSize.height + lowerPieces[index].puzzleSize.height / 2;
+  //       }
+  //     }
+  //     upperPieces.addAll(lowerPieces);
+  //     pieces = upperPieces;
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -510,6 +546,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     widget.state = this;
     print("size of pieces is ${pieces.length}");
+
 
     GameArguments args = ModalRoute.of(context).settings.arguments;
     level = args.levelNumber;
