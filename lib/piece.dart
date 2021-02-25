@@ -15,17 +15,11 @@ class Piece extends StatefulWidget {
   final Function sendToBack;
   final Function updateState;
   final bool filter;
-  double top;
-  double left;
-  double xCenterOffset;
-  Size pieceSize = Size(0.0, 0.0);
-  bool isMovable = true;
-  int turns = 0;
+  final double xCenterOffset;
+  final Size pieceSize;
+  final double initLeft;
+  final double initTop;
   PieceState state;
-  double oldTop;
-  double oldLeft;
-  DateTime lastTime;
-  bool isItActive = false;
 
   Piece(
       {Key key,
@@ -40,16 +34,42 @@ class Piece extends StatefulWidget {
         @required this.bringToTop,
         @required this.sendToBack,
         @required this.updateState,
-        @required this.filter})
+        @required this.filter,
+        @required this.xCenterOffset,
+        @required this.pieceSize,
+        @required this.initLeft,
+        @required this.initTop})
       : super(key: key)
   {
 
-    double xScale = imageSize.width / puzzleSize.width;
-    double yScale = imageSize.height / puzzleSize.height;
-    top = 0;
-    left = xCenterOffset = (xScale > yScale) ? 0.0 : (puzzleSize.width - imageSize.width/yScale)/2;
-    pieceSize = Size(puzzleSize.height*imageSize.width/ (imageSize.height*maxCol),
-                     puzzleSize.height / maxRow);
+  }
+
+  @override
+  PieceState createState() {
+    state = new PieceState();
+    return state;
+  }
+}
+
+class PieceState extends State<Piece> {
+
+  double top;
+  double left;
+  bool isMovable = true;
+  int turns = 0;
+  double oldTop;
+  double oldLeft;
+  DateTime lastTime;
+  bool isItActive = false;
+
+  void initState () {
+    print ("Initi state called");
+    super.initState();
+    widget.state = this;
+    double xScale = widget.imageSize.width / widget.puzzleSize.width;
+    double yScale = widget.imageSize.height / widget.puzzleSize.height;
+    top = widget.initTop;
+    left = widget.initLeft;
     isItActive = false;
   }
 
@@ -62,8 +82,8 @@ class Piece extends StatefulWidget {
   }
 
   void setOrgPosition() {
-    if (filter) {
-      oldLeft = xCenterOffset;
+    if (widget.filter) {
+      oldLeft = widget.xCenterOffset;
       oldTop = 0;
     }
     else {
@@ -74,12 +94,11 @@ class Piece extends StatefulWidget {
 
   void setCurPosToOrgPos()
   {
-    state.setState(() {
-
+    setState(() {
       top = oldTop;
       left = oldLeft;
+      isMovable = true;
     });
-
   }
 
   bool atHome ()
@@ -100,7 +119,7 @@ class Piece extends StatefulWidget {
 
   void movePieceBackToOrgPosition() {
     Timer.periodic(Duration(milliseconds: 100), (timer) {
-      state.setState(() {
+      setState(() {
         if ((oldTop - top).abs() < 10) {
           top = oldTop;
         }
@@ -126,15 +145,6 @@ class Piece extends StatefulWidget {
   }
 
   @override
-  PieceState createState() {
-    state = new PieceState();
-    return state;
-  }
-}
-
-class PieceState extends State<Piece> {
-
-  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery
         .of(context)
@@ -146,8 +156,10 @@ class PieceState extends State<Piece> {
         .height;
     bool staticImage = (widget.yOffset != 0.0) ? false : true;
 
-    if (widget.top == null) {
-      widget.top = widget.yOffset;
+    widget.state = this;
+
+    if (top == null) {
+      top = widget.yOffset;
     }
     if (widget.filter) {
       return Positioned(
@@ -161,15 +173,15 @@ class PieceState extends State<Piece> {
     }
     else {
       return Positioned(
-          top: widget.top,
-          left: widget.left,
+          top: top,
+          left: left,
           //width: //(xScale < yScale)? widget.imageSize.width / xScale: widget.imageSize.width / yScale,
           height: widget.puzzleSize.height,
           //(xScale < yScale)? widget.imageSize.height / xScale: widget.imageSize.height / yScale,
           child: GestureDetector(
             //         behavior: HitTestBehavior.opaque,
             onTap: () {
-              if (!staticImage && widget.isMovable) {
+              if (!staticImage && isMovable) {
                 widget.bringToTop(widget);
               print ('Piece is tapped');
               }
@@ -179,17 +191,17 @@ class PieceState extends State<Piece> {
               // });
             },
             onPanStart: (_) {
-              if (!staticImage && widget.isMovable) {
+              if (!staticImage && isMovable) {
                 widget.bringToTop(widget);
               }
             },
             onPanUpdate: (dragUpdateDetails) {
-              if (widget.isItActive && widget.isMovable) {
+              if (isItActive && isMovable) {
                 widget.updateState(() {
                   setState(() {
-                    widget.lastTime = DateTime.now();
-                    double tX = widget.left + dragUpdateDetails.delta.dx;
-                    double tY = widget.top + dragUpdateDetails.delta.dy;
+                    lastTime = DateTime.now();
+                    double tX = left + dragUpdateDetails.delta.dx;
+                    double tY = top + dragUpdateDetails.delta.dy;
                     double xLeftLimit = -widget.col * widget.pieceSize.width;
                     double xRightLimit = (widget.maxCol - widget.col - 1) * widget.pieceSize.width +
                         2.0 * widget.xCenterOffset;
@@ -198,13 +210,13 @@ class PieceState extends State<Piece> {
                       double yBotLimit = 2 * widget.puzzleSize.height -
                           (widget.row + 1) * widget.pieceSize.height;
                       if ((tY >= yTopLimit) && (tY <= yBotLimit)) {
-                        widget.top += dragUpdateDetails.delta.dy;
-                        widget.left += dragUpdateDetails.delta.dx;
-                        double widgetLeft = widget.left - widget.xCenterOffset;
-                        if ( -10 < widget.top && widget.top < 10 && -10 < widgetLeft && widgetLeft < 10) {
-                          widget.top = 0;
-                          widget.left = widget.xCenterOffset;
-                          widget.isMovable = false;
+                        top += dragUpdateDetails.delta.dy;
+                        left += dragUpdateDetails.delta.dx;
+                        double widgetLeft = left - widget.xCenterOffset;
+                        if ( -10 < top && top < 10 && -10 < widgetLeft && widgetLeft < 10) {
+                          top = 0;
+                          left = widget.xCenterOffset;
+                          isMovable = false;
                           //                          widget.sendToBack(widget);
                         }
                         else {
@@ -221,7 +233,7 @@ class PieceState extends State<Piece> {
               child: CustomPaint(
                   foregroundPainter: PuzzlePiecePainter(
                       widget.row, widget.col, widget.maxRow, widget.maxCol,
-                      (widget.yOffset != 0.0) ? true : false, widget.isMovable),
+                      (widget.yOffset != 0.0) ? true : false, isMovable),
                   child: widget.image
               ),
               clipper: PuzzlePieceClipper(widget.row, widget.col, widget.maxRow, widget.maxCol),

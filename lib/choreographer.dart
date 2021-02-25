@@ -74,7 +74,7 @@ class Choreographer
       homePage.state.gameStatus = "Start the test";
       if ((pieces != null) && (pieces.length != 0)) {
         pieces.forEach((element) {
-          element.setItInactive();
+          element.state.setItInactive();
         });
         movePuzzlePiecesBack();
       }
@@ -130,14 +130,14 @@ class Choreographer
         //find the piece tha is not at home or destination\
         bool atHome, atDestination, noIdlePiecesFound;
         noIdlePiecesFound = false;
-        int totalPuzzlePieces = homePage.cols * homePage.rows;
+        int totalPuzzlePieces = homePage.state.cols * homePage.state.rows;
         int numOfCompletedPieces = 0;
         List<int> listOfIdlers = List<int>();
         for (int i = 0; i < pieces.length; i++) {
           if (!pieces[i].filter) {
-            if (pieces[i].isMovable) {
-              atHome = pieces[i].atHome();
-              atDestination = pieces[i].atDestination();
+            if (pieces[i].state.isMovable) {
+              atHome = pieces[i].state.atHome();
+              atDestination = pieces[i].state.atDestination();
               if (!(atHome || atDestination)) {
                 listOfIdlers.add(i);
               }
@@ -155,8 +155,8 @@ class Choreographer
         DateTime l1, l2;
         int itemToBeMovedBack;
         if (listOfIdlers.length > 1) {
-           l1 = pieces[listOfIdlers[0]].lastTime;
-           l2 = pieces[listOfIdlers[1]].lastTime;
+           l1 = pieces[listOfIdlers[0]].state.lastTime;
+           l2 = pieces[listOfIdlers[1]].state.lastTime;
            if (l1.compareTo(l2) < 0) {
              itemToBeMovedBack = listOfIdlers[0];
            }
@@ -165,7 +165,7 @@ class Choreographer
            }
            //Move it back
            // pieces[itemToBeMovedBack].setCurPosToOrgPos();
-          pieces[itemToBeMovedBack].movePieceBackToOrgPosition();
+          pieces[itemToBeMovedBack].state.movePieceBackToOrgPosition();
         }
       }
     });
@@ -175,8 +175,8 @@ class Choreographer
   {
     for (int i = 0; i < pieces.length; i++) {
       if (!pieces[i].filter) {
-        if (!pieces[i].isMovable) {
-          pieces[i].setCurPosToOrgPos();
+        if (!pieces[i].state.atHome()) {
+          pieces[i].state.setCurPosToOrgPos();
         }
       }
     }
@@ -236,7 +236,7 @@ class Choreographer
           }
         }
 
-/*
+
       //Should we start the vibration
       if (curTimeUnit.vibrationActive) {
         if (curTimeUnit.startVibrations) {
@@ -253,7 +253,7 @@ class Choreographer
         }
       }
 
-*/
+
       //Should we start the sound
       if (curTimeUnit.soundActive) {
         if (curTimeUnit.startSounds) {
@@ -278,7 +278,7 @@ class Choreographer
     });
     moveBackIdlePieces();
     //Activate the pieces
-    pieces.forEach((element) {element.setItActive();});
+    pieces.forEach((element) {element.state.setItActive();});
   }
 
   void stop()

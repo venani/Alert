@@ -58,29 +58,13 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   final String title;
-  int rows = 4;
-  int cols = 4;
-  int level;
-  LightCorridor lightCorridor;
-  VibSoundCorridor vibSoundCorridor;
-  List<Piece> pieces = List<Piece>();
-  List<Light> lightPieces = List<Light>();
-  List<VibSoundButton> vibSoundButtons = List<VibSoundButton>();
-  Completer layoutCompleted = Completer();
-  Size lightCorridorSize;
-  Size vibSoundCorridorSize;
-  Choreographer choreography;
-  _MyHomePageState state;
+  _MyHomePageState state = null;
 
-  MyHomePage ({ this.title});
+  MyHomePage ({ this.title}){
+    print("Initializtion has taken place");
+  }
 
   void dispose () {
-    lightCorridor = null;
-    vibSoundCorridor = null;
-    pieces = null;
-    lightPieces = null;
-    vibSoundButtons = null;
-    state = null;
   }
 
   @override
@@ -118,6 +102,17 @@ class _MyHomePageState extends State<MyHomePage> {
   String  vibrationCount = '0/0';
   String  soundCount = '0/0';
   String  gameStatus = 'Temp';
+  int rows = 4;
+  int cols = 4;
+  int level;
+  LightCorridor lightCorridor;
+  VibSoundCorridor vibSoundCorridor;
+  List<Piece> pieces = List<Piece>();
+  List<Light> lightPieces = List<Light>();
+  List<VibSoundButton> vibSoundButtons = List<VibSoundButton>();
+  Size lightCorridorSize;
+  Size vibSoundCorridorSize;
+  Choreographer choreography;
 
   void playHandler() async {
     if (isPlaying) {
@@ -200,25 +195,25 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void bringToTop(Widget curWidget) {
     setState(() {
-      widget.pieces.remove(curWidget);
-      widget.pieces.add(curWidget);
+      pieces.remove(curWidget);
+      pieces.add(curWidget);
     });
   }
 
   void sendToBack(Widget curWidget) {
     setState(() {
-      widget.pieces.remove(curWidget);
-      widget.pieces.insert(0, curWidget);
+      pieces.remove(curWidget);
+      pieces.insert(0, curWidget);
     });
   }
 
   void updateState(VoidCallback safeFunction) {
     setState(() {
       safeFunction();
-      widget.pieces = widget.pieces;
-      if (widget.pieces.isNotEmpty) {
+      pieces = pieces;
+      if (pieces.isNotEmpty) {
         print(
-            "Key of the top of the stack ${widget.pieces.last.key.toString()}");
+            "Key of the top of the stack ${pieces.last.key.toString()}");
       }
     });
   }
@@ -365,26 +360,26 @@ class _MyHomePageState extends State<MyHomePage> {
     Size puzzleSize;
     setState(() {
       puzzleSize = puzzleKey.currentContext.size;
-      widget.lightCorridorSize = lightCorridorKey.currentContext.size;
-      widget.vibSoundCorridorSize = vibSoundCorridorKey.currentContext.size;
+      lightCorridorSize = lightCorridorKey.currentContext.size;
+      vibSoundCorridorSize = vibSoundCorridorKey.currentContext.size;
       timerBarSize = timerKey.currentContext.size;
       print(
-          'The corridor height is ${widget.lightCorridorSize.height}, puzzle height is ${puzzleSize.height}');
-      print('The soundVib height is ${widget.vibSoundCorridorSize.height} ');
-      widget.lightCorridor = LightCorridor(
-        widget.lightCorridorSize,
+          'The corridor height is ${lightCorridorSize.height}, puzzle height is ${puzzleSize.height}');
+      print('The soundVib height is ${vibSoundCorridorSize.height} ');
+      lightCorridor = LightCorridor(
+        lightCorridorSize,
         6,
         updateState,
       );
 
-      widget.vibSoundCorridor = VibSoundCorridor(
-        widget.vibSoundCorridorSize,
+      vibSoundCorridor = VibSoundCorridor(
+        vibSoundCorridorSize,
         6,
         updateState,
       );
     });
 
-    widget.choreography = Choreographer(lightCorridor: widget.lightCorridor, vibSoundCorridor: widget.vibSoundCorridor, homePage: widget);
+    choreography = Choreographer(lightCorridor: lightCorridor, vibSoundCorridor: vibSoundCorridor, homePage: widget);
 
     backgroundImage =
         await createImageFromFile("/assets/images/files/cat.png", puzzleSize);
@@ -392,12 +387,20 @@ class _MyHomePageState extends State<MyHomePage> {
         2; //Transform widget = Transform.scale(scale: 2.0, child: Image.memory(byteList));
 
     //Add Light pieces.
-    widget.lightPieces.addAll(widget.lightCorridor.getList());
-    widget.vibSoundButtons.addAll(widget.vibSoundCorridor.getList());
+    lightPieces.addAll(lightCorridor.getList());
+    vibSoundButtons.addAll(vibSoundCorridor.getList());
+
+    double xScale = imageSize.width / puzzleSize.width;
+    double yScale = imageSize.height / puzzleSize.height;
+    double xCenterOffset = (xScale > yScale) ? 0.0 : (puzzleSize.width - imageSize.width/yScale)/2;
+    double extraSpace = 2.0 * xCenterOffset / (cols - 1);
+    Size pieceSize = Size(puzzleSize.height*imageSize.width/ (imageSize.height*cols), puzzleSize.height / rows);
     Piece piece1, piece2;
     List<Piece> tempList2 = List<Piece>();
-    for (int x = 0; x < widget.rows; x++) {
-      for (int y = 0; y < widget.cols; y++) {
+    int index;
+    for (int x = 0; x < rows; x++) {
+      for (int y = 0; y < cols; y++) {
+        index = x * rows + y;
         piece1 = Piece(
             key: GlobalKey(),
             image: backgroundImage,
@@ -406,11 +409,15 @@ class _MyHomePageState extends State<MyHomePage> {
             yOffset: 0.0,
             row: x,
             col: y,
-            maxRow: widget.rows,
-            maxCol: widget.cols,
+            maxRow: rows,
+            maxCol: cols,
             bringToTop: bringToTop,
             sendToBack: sendToBack,
             updateState: updateState,
+            xCenterOffset: xCenterOffset,
+            pieceSize: pieceSize,
+            initLeft: 0.0,
+            initTop: 0.0,
             filter: true);
 
         piece2 = Piece(
@@ -421,34 +428,24 @@ class _MyHomePageState extends State<MyHomePage> {
             yOffset: puzzleSize.height / 2,
             row: x,
             col: y,
-            maxRow: widget.rows,
-            maxCol: widget.cols,
+            maxRow: rows,
+            maxCol: cols,
             bringToTop: bringToTop,
             sendToBack: sendToBack,
             updateState: updateState,
+            xCenterOffset: xCenterOffset,
+            pieceSize: pieceSize,
+            initLeft: ((x - tempList2[index].col) * pieceSize.width - xCenterOffset) + x * extraSpace,
+            initTop: (y - tempList2[index].row) * pieceSize.height + puzzleSize.height / 2,
             filter: false);
-        widget.pieces.add(piece1);
+        pieces.add(piece1);
         tempList2.add(piece2);
       }
     }
 
     tempList2.shuffle();
-    double extraSpace =
-        2.0 * widget.pieces[0].xCenterOffset / (widget.cols - 1);
-    for (int x = 0; x < widget.cols; x++) {
-      for (int y = 0; y < widget.rows; y++) {
-        int index = x * widget.rows + y;
-        tempList2[index].left +=
-            ((x - tempList2[index].col) * tempList2[index].pieceSize.width -
-                    tempList2[index].xCenterOffset) +
-                x * extraSpace;
-        tempList2[index].top =
-            (y - tempList2[index].row) * tempList2[index].pieceSize.height +
-                puzzleSize.height / 2;
-      }
-    }
 
-    widget.pieces.add(Piece(
+    pieces.add(Piece(
         key: GlobalKey(),
         image: backgroundImage,
         imageSize: imageSize,
@@ -456,29 +453,31 @@ class _MyHomePageState extends State<MyHomePage> {
         yOffset: 0.0,
         row: 0,
         col: 0,
-        maxRow: widget.rows,
-        maxCol: widget.cols,
+        maxRow: rows,
+        maxCol: cols,
         bringToTop: bringToTop,
         sendToBack: sendToBack,
         updateState: updateState,
+        xCenterOffset: xCenterOffset,
+        pieceSize: pieceSize,
         filter: true));
 
-    widget.pieces.addAll(tempList2);
-    widget.pieces.forEach((eachPiece) {eachPiece.setOrgPosition(); });
+    pieces.addAll(tempList2);
+    pieces.forEach((eachPiece) {eachPiece.state.setOrgPosition(); });
 
-    widget.choreography.setPieces (widget.pieces);
+    choreography.setPieces (pieces);
     double screenWidth = MediaQuery.of(context).size.width;
     double screenHeight = MediaQuery.of(context).size.height;
     print("Screen width is $screenWidth, $screenHeight");
     print("setState is about to be set");
-    widget.pieces.forEach((element) {element.setItInactive();});
+    pieces.forEach((element) {element.state.setItInactive();});
 
     setState(() {
-      widget.pieces = widget.pieces;
+      pieces = pieces;
     });
 
     print("image size is ${imageSize.width} and height is ${imageSize.height}");
-    print("Size of pieces at this point is ${widget.pieces.length}");
+    print("Size of pieces at this point is ${pieces.length}");
   }
 
   @override
@@ -509,15 +508,16 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
 
-    print("size of pieces is ${widget.pieces.length}");
+    widget.state = this;
+    print("size of pieces is ${pieces.length}");
 
     GameArguments args = ModalRoute.of(context).settings.arguments;
-    widget.level = args.levelNumber;
-    widget.rows = Level.getPuzzleComplexity(args.levelNumber);
+    level = args.levelNumber;
+    rows = Level.getPuzzleComplexity(args.levelNumber);
 
     return WillPopScope (
       onWillPop: () {
-        if (widget.choreography.isReady())
+        if (choreography.isReady())
           return Future.value(true);
         else
           return Future.value(false);
@@ -569,17 +569,17 @@ class _MyHomePageState extends State<MyHomePage> {
                           key: lightCorridorKey,
                           child: Container(
                               color: Colors.transparent,
-                              child: Stack(children: widget.lightPieces))),
+                              child: Stack(children: lightPieces))),
                       Expanded(
                           key: puzzleKey,
                           flex: 8,
-                          child: Stack(children: widget.pieces)),
+                          child: Stack(children: pieces)),
                       Expanded(
                           key: vibSoundCorridorKey,
                           flex: 1,
                           child: Container(
                               color: Colors.transparent,
-                              child: Stack(children: widget.vibSoundButtons))),
+                              child: Stack(children: vibSoundButtons))),
                     ],
                   ),
                 ),
@@ -589,9 +589,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     children: [
                       Spacer(flex: 1),
                       FloatingActionButton.extended(onPressed: () {
-                        if (widget.choreography.isReady()) {
-                          widget.choreography.setStatusToProgress();
-                        } else if (widget.choreography.isProgressing()) {
+                        if (choreography.isReady()) {
+                          choreography.setStatusToProgress();
+                        } else if (choreography.isProgressing()) {
 
                           bool cancel = false;
 
@@ -626,7 +626,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           );
 
                           if (!cancel) {
-                            widget.choreography.setStatusToReady();
+                            choreography.setStatusToReady();
                             Navigator.pop(context);
                           }
                         }
