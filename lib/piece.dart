@@ -17,11 +17,15 @@ class Piece extends StatefulWidget {
   final bool filter;
   final double xCenterOffset;
   final Size pieceSize;
-  double top;
-  double left;
-  double oldTop;
-  double oldLeft;
+  final bool backgroundImage;
+  double top = 0.0 ;
+  double left = 0.0;
+  double oldTop = 0.0;
+  double oldLeft = 0.0;
   PieceState state;
+  bool isMovable = true;
+  DateTime lastTime = DateTime.now();
+  bool isItActive = false;
 
   Piece(
       {Key key,
@@ -39,10 +43,83 @@ class Piece extends StatefulWidget {
         @required this.filter,
         @required this.xCenterOffset,
         @required this.pieceSize,
+        @required this.backgroundImage,
         })
       : super(key: key)
   {
+    left = xCenterOffset;
+    top = yOffset;
+  }
 
+  void setItActive() {
+   isItActive = true;
+  }
+
+  void setItInactive() {
+    isItActive = false;
+  }
+
+  void setOrgPosition() {
+    if (filter) {
+      oldLeft = xCenterOffset;
+      oldTop = 0;
+    }
+    else {
+      oldLeft = left;
+      oldTop = top;
+    }
+  }
+
+  void setCurPosToOrgPos()
+  {
+    state.setState(() {
+      top = oldTop;
+      left = oldLeft;
+      isMovable = true;
+    });
+  }
+
+  bool atHome ()
+  {
+    if ((oldTop == top) && (oldLeft == left))
+      return true;
+    else
+      return false;
+  }
+
+  bool atDestination()
+  {
+    if ((top == 0) && (left == 0))
+      return true;
+    else
+      return false;
+  }
+
+  void movePieceBackToOrgPosition() {
+    Timer.periodic(Duration(milliseconds: 100), (timer) {
+      state.setState(() {
+        if ((oldTop - top).abs() < 10) {
+          top = oldTop;
+        }
+        if ((oldLeft - left).abs() < 10) {
+          left = oldLeft;
+        }
+        if ((oldTop - top) < 0) {
+          top -= 5;
+        } else if ((oldTop - top) > 0) {
+          top +=5;
+        }
+        if ((oldLeft - left) < 0) {
+          left -= 5;
+        } else if ((oldLeft - left) > 0) {
+          left += 5;
+        }
+      });
+      if ((((oldTop - top).abs().toInt() == 0)) && (((oldLeft - left).abs().toInt() == 0))) {
+        print('reached here');
+        timer.cancel();
+      }
+    });
   }
 
   @override
@@ -54,93 +131,6 @@ class Piece extends StatefulWidget {
 
 class PieceState extends State<Piece> {
 
-  bool isMovable = true;
-  int turns = 0;
-  DateTime lastTime;
-  bool isItActive = false;
-
-  void initState () {
-    print ("Initi state called");
-    super.initState();
-    widget.state = this;
-    double xScale = widget.imageSize.width / widget.puzzleSize.width;
-    double yScale = widget.imageSize.height / (widget.puzzleSize.height/2.0);
-    widget.left = widget.xCenterOffset;
-    widget.top = widget.yOffset;
-    isItActive = false;
-    //resetPosition();
-  }
-
-  void setItActive() {
-    isItActive = true;
-  }
-
-  void setItInactive() {
-    isItActive = false;
-  }
-
-  void setOrgPosition() {
-    if (widget.filter) {
-      widget.oldLeft = widget.xCenterOffset;
-      widget.oldTop = 0;
-    }
-    else {
-      widget.oldLeft = widget.left;
-      widget.oldTop = widget.top;
-    }
-  }
-
-  void setCurPosToOrgPos()
-  {
-    setState(() {
-      widget.top = widget.oldTop;
-      widget.left = widget.oldLeft;
-      isMovable = true;
-    });
-  }
-
-  bool atHome ()
-  {
-    if ((widget.oldTop == widget.top) && (widget.oldLeft == widget.left))
-      return true;
-    else
-      return false;
-  }
-
-  bool atDestination()
-  {
-    if ((widget.top == 0) && (widget.left == 0))
-      return true;
-    else
-      return false;
-  }
-
-  void movePieceBackToOrgPosition() {
-    Timer.periodic(Duration(milliseconds: 100), (timer) {
-      setState(() {
-        if ((widget.oldTop - widget.top).abs() < 10) {
-          widget.top = widget.oldTop;
-        }
-        if ((widget.oldLeft - widget.left).abs() < 10) {
-          widget.left = widget.oldLeft;
-        }
-        if ((widget.oldTop - widget.top) < 0) {
-          widget.top -= 5;
-        } else if ((widget.oldTop - widget.top) > 0) {
-          widget.top +=5;
-        }
-        if ((widget.oldLeft - widget.left) < 0) {
-          widget.left -= 5;
-        } else if ((widget.oldLeft - widget.left) > 0) {
-          widget.left += 5;
-        }
-      });
-      if ((((widget.oldTop - widget.top).abs().toInt() == 0)) && (((widget.oldLeft - widget.left).abs().toInt() == 0))) {
-        print('reached here');
-        timer.cancel();
-      }
-    });
-  }
 
   // void resetPosition () {
   //   if (!retrievedData && !widget.filter) {
@@ -161,13 +151,23 @@ class PieceState extends State<Piece> {
         .of(context)
         .size
         .height;
-    bool staticImage = (widget.yOffset != 0.0) ? false : true;
 
     widget.state = this;
-
     //resetPosition();
 
-    return Positioned(
+    if (widget.backgroundImage) {
+      widget.isMovable = false;
+      return Positioned(
+          top: 0.0,
+          left: widget.xCenterOffset,
+          //width: widget.pieceSize.width * widget.maxCol,
+          height: widget.puzzleSize.height,
+          //(xScale < yScale)? widget.imageSize.height / xScale: widget.imageSize.height / yScale,
+          child: ColorFiltered( colorFilter: ColorFilter.mode(Colors.white, BlendMode.softLight),
+              child: widget.image)//Container(color: Color(0xFF0E3311).withOpacity(0.7)))
+      );
+    }
+    else return Positioned(
         top: widget.top,
         left: widget.left,
         //width: //(xScale < yScale)? widget.imageSize.width / xScale: widget.imageSize.width / yScale,
@@ -176,7 +176,7 @@ class PieceState extends State<Piece> {
         child: GestureDetector(
           //         behavior: HitTestBehavior.opaque,
           onTap: () {
-            if (!staticImage && isMovable) {
+            if (!widget.backgroundImage && widget.isMovable) {
               widget.bringToTop(widget);
             print ('Piece is tapped');
             }
@@ -186,37 +186,43 @@ class PieceState extends State<Piece> {
             // });
           },
           onPanStart: (_) {
-            if (!staticImage && isMovable) {
+            if (!widget.backgroundImage && widget.isMovable) {
               widget.bringToTop(widget);
             }
           },
           onPanUpdate: (dragUpdateDetails) {
-            if (isItActive && isMovable) {
+            print ('Trying to move the piece');
+            if (widget.isItActive && widget.isMovable && !widget.backgroundImage) {
               widget.updateState(() {
                 setState(() {
-                  lastTime = DateTime.now();
+                  widget.lastTime = DateTime.now();
                   double tX = widget.left + dragUpdateDetails.delta.dx;
                   double tY = widget.top + dragUpdateDetails.delta.dy;
-                  double xLeftLimit = -widget.col * widget.pieceSize.width;
-                  double xRightLimit = (widget.maxCol - widget.col - 1) * widget.pieceSize.width +
+                  double xLeftLimit = -widget.col * widget.pieceSize.width/2;
+                  double xRightLimit = (widget.maxCol - widget.col - 1) * widget.pieceSize.width/2 +
                       2.0 * widget.xCenterOffset;
                   if ((tX >= xLeftLimit) && (tX <= (xRightLimit))) {
-                    double yTopLimit = -widget.row * widget.pieceSize.height;
+                    print ('Crossed the xlimit check');
+                    double yTopLimit = -widget.row * widget.pieceSize.height/2;
                     double yBotLimit = 2 * widget.puzzleSize.height -
-                        (widget.row + 1) * widget.pieceSize.height;
+                        (widget.row + 1) * widget.pieceSize.height/2;
                     if ((tY >= yTopLimit) && (tY <= yBotLimit)) {
+                      print ('Crossed the ylimit check');
                       widget.top += dragUpdateDetails.delta.dy;
                       widget.left += dragUpdateDetails.delta.dx;
                       double widgetLeft = widget.left - widget.xCenterOffset;
                       if ( -10 < widget.top && widget.top < 10 && -10 < widgetLeft && widgetLeft < 10) {
                         widget.top = 0;
                         widget.left = widget.xCenterOffset;
-                        isMovable = false;
+                        widget.isMovable = false;
                         //                          widget.sendToBack(widget);
                       }
                       else {
                         widget.bringToTop(widget);
                       }
+                    }
+                    else {
+                      print (" yTopLimit $yTopLimit tY $tY  yBotLimit $yBotLimit");
                     }
                   }
                 });
@@ -228,7 +234,7 @@ class PieceState extends State<Piece> {
             child: CustomPaint(
                 foregroundPainter: PuzzlePiecePainter(
                     widget.row, widget.col, widget.maxRow, widget.maxCol,
-                    (widget.yOffset != 0.0) ? true : false, isMovable),
+                    (widget.yOffset != 0.0) ? true : false, widget.isMovable),
                 child: widget.image
             ),
             clipper: PuzzlePieceClipper(widget.row, widget.col, widget.maxRow, widget.maxCol),

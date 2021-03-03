@@ -15,22 +15,25 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:audioplayers/audio_cache.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'vibColumn.dart';
-import 'choreographer.dart';
-import 'package:slide_countdown_clock/slide_countdown_clock.dart';
+import 'dart:math';
 import 'level.dart';
+import 'dart:core';
+import 'choreographer.dart';
+
+SharedPreferences theStorage;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences storage = await SharedPreferences.getInstance();
-  runApp(MindfullnessAlertExcerciserApp(storage));
+  theStorage = await SharedPreferences.getInstance();
+  runApp(MindfullnessAlertExcerciserApp());
 }
 
 class MyApp extends StatelessWidget {
-  final SharedPreferences storage;
-
-  MyApp(this.storage);
-
   // This widget is the root of your application.
+  @override void initState() async {
+    Scores.items = await theStorage.getStringList(Scores.storageKey);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -51,16 +54,19 @@ class MyApp extends StatelessWidget {
         // closer together (more dense) than on mobile platforms.
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Mindfull Application'),
+      home: MyHomePage(title: 'Mindfull Application', levelNumber: 1,),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   final String title;
-  _MyHomePageState state = null;
+  final int levelNumber;
+  _MyHomePageState state;
+  bool displayResultsNow = false;
 
-  MyHomePage ({ this.title}){
+
+  MyHomePage ({ this.title, this.levelNumber}){
     print("Initializtion has taken place");
   }
 
@@ -84,9 +90,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Completer layoutCompleted = Completer();
   Completer puzzleSizeCompleted = Completer();
   Completer timerBarCompleted = Completer();
-  Completer<Size> lightCorridorSizeCompleted = Completer<Size>();
-  Completer<Size> vibSoundCorridorSizeCompleted = Completer<Size>();
-  Size imageSize;
+  Completer<ui.Size> lightCorridorSizeCompleted = Completer<ui.Size>();
+  Completer<ui.Size> vibSoundCorridorSizeCompleted = Completer<ui.Size>();
+  ui.Size imageSize;
   Uint8List byteList;
   AudioCache audioCache = AudioCache();
   AudioPlayer audioPlayer;
@@ -95,16 +101,19 @@ class _MyHomePageState extends State<MyHomePage> {
   double timerBarValue = 0.0;
   double timerBarTotalValue = 1000.0;
   GlobalKey timerKey = new GlobalKey();
-  Size timerBarSize;
+  ui.Size timerBarSize;
+  String  lastResult = 'No completed run';
   String  timeRemaining = '120';
   String  puzzleCompletion = '100%';
   String  lightCount = '0/0';
   String  vibrationCount = '0/0';
   String  soundCount = '0/0';
   String  gameStatus = 'Temp';
-  int rows = 4;
-  int cols = 4;
-  int level;
+  int rows = 0;
+  int cols = 0;
+  int lightRate = 0;
+  int vibrationRate = 0;
+  int soundRate = 0;
   LightCorridor lightCorridor;
   VibSoundCorridor vibSoundCorridor;
   List<Piece> pieces = List<Piece>();
@@ -190,19 +199,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _MyHomePageState() {
-    WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
+      WidgetsBinding.instance.addPostFrameCallback(_afterLayout);
 
     print("Layout callback installed");
   }
 
-  void bringToTop(Widget curWidget) {
+  void bringToTop(Piece curWidget) {
     setState(() {
       pieces.remove(curWidget);
       pieces.add(curWidget);
     });
   }
 
-  void sendToBack(Widget curWidget) {
+  void sendToBack(Piece curWidget) {
     setState(() {
       pieces.remove(curWidget);
       pieces.insert(0, curWidget);
@@ -399,17 +408,18 @@ class _MyHomePageState extends State<MyHomePage> {
     Piece piece1, piece2;
     List<Piece> tempList2 = List<Piece>();
     int index;
-    for (int x = 0; x < rows; x++) {
-      for (int y = 0; y < cols; y++) {
-        index = x * rows + y;
-        piece1 = Piece(
+
+    for (int y = 0; y < rows; y++) {
+      for (int x = 0; x < cols; x++) {
+        index = x  + y*cols;
+/*        piece1 = Piece(
             key: GlobalKey(),
             image: backgroundImage,
             imageSize: imageSize,
             puzzleSize: Size(puzzleSize.width, puzzleSize.height / 2.0),
             yOffset: 0.0,
-            row: x,
-            col: y,
+            row: y,
+            col: x,
             maxRow: rows,
             maxCol: cols,
             bringToTop: bringToTop,
@@ -417,16 +427,17 @@ class _MyHomePageState extends State<MyHomePage> {
             updateState: updateState,
             xCenterOffset: xCenterOffset,
             pieceSize: pieceSize,
+            backgroundImage: false,
             filter: true);
-
+*/
         piece2 = Piece(
             key: GlobalKey(),
             image: backgroundImage,
             imageSize: imageSize,
             puzzleSize: Size(puzzleSize.width, puzzleSize.height / 2.0),
             yOffset: puzzleSize.height / 2,
-            row: x,
-            col: y,
+            row: y,
+            col: x,
             maxRow: rows,
             maxCol: cols,
             bringToTop: bringToTop,
@@ -434,12 +445,13 @@ class _MyHomePageState extends State<MyHomePage> {
             updateState: updateState,
             xCenterOffset: xCenterOffset,
             pieceSize: pieceSize,
+            backgroundImage: false,
             filter: false);
-        pieces.add(piece1);
+//        pieces.add(piece1);
         tempList2.add(piece2);
       }
     }
-/*
+
     pieces.add(Piece(
         key: GlobalKey(),
         image: backgroundImage,
@@ -455,27 +467,27 @@ class _MyHomePageState extends State<MyHomePage> {
         updateState: updateState,
         xCenterOffset: xCenterOffset,
         pieceSize: pieceSize,
+        backgroundImage: true,
         filter: true));
-*/
-    tempList2.shuffle();
-    double extraSpace =
-        2.0 * pieces[0].xCenterOffset / (cols - 1);
-    for (int x = 0; x < cols; x++) {
-      for (int y = 0; y < rows; y++) {
-        int index = x * rows + y;
-        tempList2[index].left =
-            tempList2[index].xCenterOffset + ((x - tempList2[index].col) * tempList2[index].pieceSize.width -
-                tempList2[index].xCenterOffset) +
-                x * extraSpace;
-        tempList2[index].top =
-            (y - tempList2[index].row) * tempList2[index].pieceSize.height +
-                puzzleSize.height / 2;
+
+
+    tempList2.shuffle(Random(DateTime.now().second));
+//    double extraSpace =
+//        2.0 * pieces[0].xCenterOffset / (cols - 1);
+    for (int y = 0; y < rows; y++) {
+        for (int x = 0; x < cols; x++) {
+          int index = x  + y*cols;
+          tempList2[index].left += ((x - tempList2[index].col) * tempList2[index].pieceSize.width/2);
+          tempList2[index].top += ((y - tempList2[index].row) * tempList2[index].pieceSize.height/2);
       }
     }
+
+//    print ("Extra space is $extraSpace");
+
     pieces.addAll(tempList2);
 
-    pieces.forEach((eachPiece) {eachPiece.state.setOrgPosition(); });
-    pieces.forEach((element) {element.state.setItInactive();});
+    pieces.forEach((eachPiece) {eachPiece.setOrgPosition(); });
+    pieces.forEach((element) {element.setItInactive();});
 
     choreography.setPieces (pieces);
     double screenWidth = MediaQuery.of(context).size.width;
@@ -493,6 +505,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
+    List<String> puzzleComplexity = Level.getPuzzleComplexity(widget.levelNumber).split('x');
+    rows = int.parse(puzzleComplexity[0]);
+    cols = int.parse(puzzleComplexity[1]);
+    lightRate = Level.getEventComplexity(widget.levelNumber);
+    vibrationRate = Level.getEventComplexity(widget.levelNumber);
+    soundRate = Level.getEventComplexity(widget.levelNumber);
+
     //Size puzzleSize = puzzleKey.currentContext.size;
     splitImage();
     // _assetsAudioPlayer = AssetsAudioPlayer();
@@ -545,139 +564,170 @@ class _MyHomePageState extends State<MyHomePage> {
     // than having to individually change instances of widgets.
 
     widget.state = this;
-    print("size of pieces is ${pieces.length}");
+    if (pieces != null) {
+      print("size of pieces is ${pieces.length}");
+    }
 
-
-    GameArguments args = ModalRoute.of(context).settings.arguments;
-    level = args.levelNumber;
-    rows = Level.getPuzzleComplexity(args.levelNumber);
-
-    return WillPopScope (
-      onWillPop: () {
-        if (choreography.isReady())
-          return Future.value(true);
-        else
-          return Future.value(false);
-      },
-      child: Scaffold(
-          appBar: AppBar(
-            //Here we take the value from the MyHomePage object that was created by
-            //the App.build method, and use it to set our appbar title.
-            title: Text(widget.title),
-          ),
-          body: Container(
-            decoration: new BoxDecoration(
-                gradient: new LinearGradient(
-                    colors: [const Color(0xFF000046), const Color(0xFF1CB5E0)],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft)),
-            child: Column(
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: Row(
-                      key: timerKey,
-                    children: [
-                      Expanded(flex: 3, child: Column( children: [
-                        Text('Time-sec', style: TextStyle(color: Colors.white),),
-                        Text('$timeRemaining', style: TextStyle(color: Colors.white),)])),
-                      Expanded(flex: 3, child: Column( children: [
-                        Text('Comp %',style: TextStyle(color: Colors.white)),
-                        Text('$puzzleCompletion', style: TextStyle(color: Colors.white),)])),
-                      Expanded(flex: 3, child: Column( children: [
-                        Icon(Icons.lightbulb, color: Colors.white, size: 20.0),
-                        Text('$lightCount', style: TextStyle(color: Colors.white),)])),
-                      Expanded(flex: 3, child: Column( children: [
-                        Icon(Icons.vibration, color: Colors.white, size: 20.0,),
-                        Text('$vibrationCount', style: TextStyle(color: Colors.white),)])),
-                      Expanded(flex: 3, child: Column( children: [
-                        Icon(Icons.music_note, color: Colors.white, size: 20.0),
-                        Text('$soundCount', style: TextStyle(color: Colors.white))])),
-                    ]
+    if (widget.displayResultsNow) {
+      widget.displayResultsNow = false;
+      String results = choreography.getResultString();
+      showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context)  {
+            return AlertDialog(
+                title: Text("AlertDialog"),
+                content: Text("Do you really want to cancel?"),
+                actions: <Widget>[
+                  FlatButton(
+                    child: Text("Ok"),
+                    onPressed: () {
+                      Navigator.of(context, rootNavigator: true).pop();
+                      Navigator.of(context, rootNavigator: true).pop();
+                    },
                   )
-                ),
-
-                Expanded(
-                  flex: 18,
-                  child: Row(
-                    children: [
-                      Expanded(
-                          flex: 1,
-                          key: lightCorridorKey,
-                          child: Container(
-                              color: Colors.transparent,
-                              child: Stack(children: lightPieces))),
-                      Expanded(
-                          key: puzzleKey,
-                          flex: 8,
-                          child: Stack(children: pieces)),
-                      Expanded(
-                          key: vibSoundCorridorKey,
-                          flex: 1,
-                          child: Container(
-                              color: Colors.transparent,
-                              child: Stack(children: vibSoundButtons))),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    children: [
-                      Spacer(flex: 1),
-                      FloatingActionButton.extended(onPressed: () {
-                        if (choreography.isReady()) {
-                          choreography.setStatusToProgress();
-                        } else if (choreography.isProgressing()) {
-
-                          bool cancel = false;
-
-                          Widget cancelButton = FlatButton(
-                            child: Text("Yes"),
-                            onPressed:  () {
-                              cancel = true;
-                            },
-                          );
-
-                          Widget continueButton = FlatButton(
-                            child: Text("No"),
-                            onPressed:  () {
-                              cancel = false;
-                            },
-                          );
-
-                          AlertDialog alert = AlertDialog(
-                            title: Text("AlertDialog"),
-                            content: Text("Do you really want to cancel?"),
-                            actions: [
-                              cancelButton,
-                              continueButton,
-                            ],
-                          );
-
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return alert;
-                            },
-                          );
-
-                          if (!cancel) {
-                            choreography.setStatusToReady();
-                            Navigator.pop(context);
-                          }
-                        }
-                      },
-                      label: Text('$gameStatus'), //shape: RoundedRectangleBorder(),
-                      ),
-                      Spacer(flex: 1)
-                    ],
-                  ),
-                )
-              ],
+                ]
+            );
+          }
+      );
+    } else {
+      return WillPopScope (
+        onWillPop: () {
+          if (choreography.isReady())
+            return Future.value(true);
+          else
+            return Future.value(false);
+        },
+        child: Scaffold(
+            appBar: AppBar(
+              //Here we take the value from the MyHomePage object that was created by
+              //the App.build method, and use it to set our appbar title.
+              title: Text(widget.title),
             ),
-          )),
-    );
+            body: Container(
+              decoration: new BoxDecoration(
+                  gradient: new LinearGradient(
+//                    colors: [const Color(0xFF000046), const Color(0xFF1CB5E0)],
+                      colors: [Colors.indigo, Colors.black],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft)),
+              child: Column(
+                children: [
+                  Expanded(
+                      flex: 2,
+                      child: Row(
+                          key: timerKey,
+                          children: [
+                            Expanded(flex: 3, child: Column( children: [
+                              Text('Comp %',style: TextStyle(color: Colors.white)),
+                              Text('$puzzleCompletion', style: TextStyle(color: Colors.white),)])),
+                            Expanded(flex: 3, child: Column( children: [
+                              Icon(Icons.lightbulb, color: Colors.white),
+                              Text('$lightCount', style: TextStyle(color: Colors.white),)])),
+                            Expanded(flex: 3, child: Column( children: [
+                              Icon(Icons.vibration, color: Colors.white),
+                              Text('$vibrationCount', style: TextStyle(color: Colors.white),)])),
+                            Expanded(flex: 3, child: Column( children: [
+                              Icon(Icons.music_note, color: Colors.white),
+                              Text('$soundCount', style: TextStyle(color: Colors.white))])),
+                          ]
+                      )
+                  ),
+//9841267072
+                  Expanded(
+                    flex: 18,
+                    child: Row(
+                      children: [
+                        Expanded(
+                            flex: 2,
+                            key: lightCorridorKey,
+                            child: Stack(
+                             children: [
+                            Positioned(
+                              child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                                 children: [
+                                   Text(" Level", style: TextStyle(color: Colors.white)),
+                                   Text(" ${widget.levelNumber}", style: TextStyle(color: Colors.white)),
+                                 ],
+                               ),
+                            ),
+                               Positioned(child: Stack(children: lightPieces)),
+                             ],
+                            ),
+                            ),
+                        Expanded(
+                            key: puzzleKey,
+                            flex: 8,
+                            child: Stack(children: pieces)),
+                        Expanded(
+                            key: vibSoundCorridorKey,
+                            flex: 2,
+                            child: Stack(
+                              children: [
+                                Positioned(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Text("Seconds", style: TextStyle(color: Colors.white)),
+                                      Text("$timeRemaining", style: TextStyle(color: Colors.white)),
+                                    ],
+                                  ),
+                                ),
+                                Positioned(
+                                  child: Stack(children: vibSoundButtons)),]
+                            )),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      children: [
+                        Spacer(flex: 1),
+                        Text('Last Result: $lastResult', style: TextStyle(color: Colors.white)),
+                        Spacer(flex: 1),
+                        FloatingActionButton.extended(onPressed: () {
+                          if (choreography.isReady()) {
+                            choreography.setStatusToProgress();
+                          } else if (choreography.isProgressing()) {
+                            showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (BuildContext context)  {
+                                  return AlertDialog (
+                                      title: Text("AlertDialog"),
+                                      content: Text("Do you really want to cancel?"),
+                                      actions: <Widget>[
+                                        FlatButton(
+                                          child: Text("Yes"),
+                                          onPressed:  () async {
+                                            Navigator.of(context, rootNavigator: true).pop();
+                                            Navigator.of(context, rootNavigator: true).pop();
+                                          },
+                                        ),
+                                        FlatButton(
+                                          child: Text("No"),
+                                          onPressed:  () {
+                                            Navigator.of(context, rootNavigator: true).pop();
+                                          },
+                                        )]
+                                  );
+                                }
+                            );
+                          }
+                        },
+                          label: Text('$gameStatus'), //shape: RoundedRectangleBorder(),
+                        ),
+                        Spacer(flex: 1)
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            )),
+      );
+    }
   }
 }
 
@@ -705,8 +755,7 @@ showAlertDialog (BuildContext context) {
 
 
 class MindfullnessAlertExcerciserApp extends StatelessWidget {
-  final SharedPreferences storage;
-  MindfullnessAlertExcerciserApp(this.storage);
+  MindfullnessAlertExcerciserApp();
   @override
   Widget build(BuildContext context) {
     return MaterialApp (
@@ -714,32 +763,124 @@ class MindfullnessAlertExcerciserApp extends StatelessWidget {
       routes: <String, WidgetBuilder> {
         '/InstructionsScreen' : (context) => Instructions(),
         '/AlertGameScreen' : (context) => MyHomePage(title: "Mindfulness Alertness Exerciser"),
+        '/Scores': (context) => Scores()
     }
     );
   }
 }
 
+class LevelData {
+  final int levelNumber;
+  final String puzzleComplexity;
+  final int eventComplexity;
+  LevelData ({this.levelNumber, this.puzzleComplexity, this.eventComplexity});
+}
+
 class StartApp extends StatelessWidget {
-  StartApp();
   @override
   Widget build(BuildContext context) {
-    return Scaffold (
+    return Scaffold ( backgroundColor: Color(0xFF01579B) ,
       appBar: AppBar(title: Text("Mindfulness Alertness Exerciser"),),
       body: Column(
         children: [
-          FlatButton(
-            child: Text("Instructions"),
-            color: Colors.green,
-            onPressed: () {
-              Navigator.pushNamed(context, '/InstructionsScreen');
-            }
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: Text ('Please select a level', style: TextStyle( color: Colors.white, fontSize: 20),
+              ),
+            ),
           ),
-          FlatButton(
-              child: Text("Alert Game Screen"),
-              color: Colors.green,
-              onPressed: () {
-                Navigator.pushNamed(context, '/AlertGameScreen', arguments: GameArguments(1));
-              }
+          Expanded(
+            flex: 8,
+            child: Container(
+              decoration: BoxDecoration (
+                color: Colors.white,
+                border: Border.all(
+                  color: Colors.black,
+                  width: 4,
+                )
+              ),
+              child: GridView.builder(
+                itemCount: 21,
+                scrollDirection: Axis.vertical,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10.0,
+                  mainAxisSpacing: 10.0,
+                ),
+                itemBuilder: (BuildContext context, int index) {
+                  return FloatingActionButton.extended(
+                    onPressed: () {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) => MyHomePage(title: "Mindfulness Alertness Exerciser",
+                              levelNumber: (index+1))));
+                    },
+                    heroTag: 'thecontact$index',
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    label: Container(
+                      alignment: Alignment.center,
+                      child: Center(
+                        child: Column( crossAxisAlignment: CrossAxisAlignment.center , mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Level - ${index + 1}',  style: TextStyle( decoration: TextDecoration.underline, fontWeight: FontWeight.bold),),
+                            Text('Size - ${Level.getPuzzleComplexity(index + 1)}'),
+                            Text('Events - ${Level.getEventComplexity(index + 1)}'),
+                          ],
+                        ),
+                      ),
+                      decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(15)),
+                    ),
+                  );
+                  // Text("${(levelData[index].levelNumber)} this is a long text test");
+                },
+              ),
+              // child: ListView.builder(
+              //   itemCount: levelData.length,
+              //   itemBuilder: (context, index){
+              //     return Card(
+              //       child: ListTile(
+              //         onTap: () { print("${(levelData[index].levelNumber)}"); },
+              //         title: Text("${(levelData[index].levelNumber)} this is a long text test")
+              //       )
+              //     );
+              //   },
+              // ),
+            ),
+          ),
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: Row (
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: FloatingActionButton.extended(
+                        label: Text("Scores", style: TextStyle(fontSize: 20)),
+                        backgroundColor: Colors.blue,
+                        heroTag: 'contact',
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/Scores');
+                        }
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: FloatingActionButton.extended(
+                        label: Text("Help", style: TextStyle(fontSize: 20)),
+                        backgroundColor: Colors.blue,
+                        heroTag: 'contact2',
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/InstructionsScreen');
+                        }
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       )
@@ -756,12 +897,51 @@ class Instructions extends StatelessWidget {
   }
 }
 
+
 class Scores extends StatelessWidget {
+  static const int size = 20;
+  static const String storageKey = 'Scores';
+  static List<String> items = List<String>();
+  static String getItem(int index) {
+    return items[index];
+  }
+  static addString (String entry) async {
+    print('item added: $entry');
+    if (size == items.length) {
+      items.removeLast();
+    }
+    items.add(entry);
+    bool done = await theStorage.setStringList(Scores.storageKey, Scores.items);
+    print ('The entry is: $entry and done status is $done');
+  }
+
   @override
   Widget build(BuildContext context) {
+    print ("NUmber of items in the list are ${items.length}");
     return Scaffold(
-        appBar: AppBar(title: Text("Scores will come here"),)
-    );
+        appBar: AppBar(title: Text("Scores will come here", style: TextStyle(color:Colors.indigo)),),
+        body: Column (
+
+    children: [
+     Expanded(
+       flex: 20,
+       child: Container(
+         decoration: BoxDecoration (
+             color: Colors.white,
+             border: Border.all(
+               color: Colors.black,
+               width: 4,
+             )
+         ),         child: ListView.builder(
+         itemCount: Scores.items.length,
+         itemBuilder: (context, index) {
+           return Card(color: Colors.purple,
+               borderOnForeground: true,
+               child: ListTile(subtitle: Text('Test'),title: Text("${Scores.getItem(index)}", style: TextStyle(color:Colors.white, fontSize: 20))));
+         }),
+       ),
+     )]
+     ));
   }
 }
 

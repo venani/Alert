@@ -42,10 +42,13 @@ class VibSoundCorridor
     return vibSoundButtonList;
   }
 
-  void turnVibrationsOn() {
+  void turnVibrationsOn() async {
     print ('turnVibrationsOn');
-    Vibration.vibrate();
+    if (await Vibration.hasVibrator()) {
+      Vibration.vibrate(duration: 10000);
+    }
   }
+
 
   void turnVibrationsOff() {
     print ('turnVibrationsOff');
@@ -54,7 +57,7 @@ class VibSoundCorridor
 
   void turnSoundsOn() async {
     print ('turnSoundsOn');
-    if (audioPlayer != null) {
+    if (audioPlayer == null) {
       audioPlayer = await audioCache.play('sound/mind.mp3');
       print('Should be playing the music');
     }

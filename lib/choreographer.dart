@@ -7,6 +7,9 @@ import 'level.dart';
 import 'dart:math';
 import 'main.dart';
 import 'piece.dart';
+import 'package:get/get.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 enum ChoreographerStatus {
   Ready,
@@ -23,12 +26,12 @@ class Choreographer
   ChoreographerStatus curStatus = ChoreographerStatus.Ready;
   int numberOfMinutes = 2;
   int level = 1;
-  int numLights = Level.getLightsComplexity(1);
-  int numSounds = Level.getSoundComplexity(1);
-  int numVibrations = Level.getVibrationComplexity(1);
-  Timeline timeline;
+  int numLights = 0;
+  int numSounds = 0;
+  int numVibrations = 0;
+  Timeline timeline = null;
   int index = 0;
-  int gameTime;
+  int gameTime = 0;
   bool timer1InProgress = false;
   bool timer2InProgress = false;
   int lastLightKey = 0;
@@ -40,16 +43,19 @@ class Choreographer
   int curLightKeys = 0;
   int curVibrationKeys = 0;
   int curSoundKeys = 0;
+  Timer timer1;
+  Timer timer2;
+  int totalPuzzlePieces = 0;
+  int numOfCompletedPieces = 0;
+  int beginLightKey = 0;
+  int beginVibKey = 0;
+  int beginSoundKey = 0;
 
   Choreographer ({this.lightCorridor, this.vibSoundCorridor, this.homePage}) {
     lightCorridor.setCallback(LightCallback);
     vibSoundCorridor.setClickCallBack(VibSoundCallback);
-    setStatusToReady();
-  }
-
-  bool areTheTimersStopped()
-  {
-    return timer1InProgress && timer2InProgress;
+    numLights = numVibrations = numSounds = Level.getEventComplexity(homePage.levelNumber);
+    setStatusToReady(true);
   }
 
   void dispose ()
@@ -68,16 +74,45 @@ class Choreographer
     numberOfMinutes = numMinutes;
   }
 
-  void setStatusToReady() {
+  void setStatusToReady(bool firstTime) {
     homePage.state.setState(() {
+      if (timer1 != null) {
+        timer1.cancel();
+        timer1 = null;
+      }
+      if (timer2 != null) {
+        timer2.cancel();
+        timer2 = null;
+      }
+      Widget cancelButton = FlatButton(
+        child: Text("Yes"),
+        onPressed:  () {},
+      );
+      Widget continueButton = FlatButton(
+        child: Text("No"),
+        onPressed:  () {},
+      );
+      // set up the AlertDialog
+      AlertDialog alert = AlertDialog(
+        title: Text("AlertDialog"),
+        content: Text("Do you really want to cancel?"),
+        actions: [
+          cancelButton,
+          continueButton,
+        ],
+      );
+
       curStatus = ChoreographerStatus.Ready;
-      homePage.state.gameStatus = "Start the test";
+//      Get.dialog((alert));
+      homePage.state.gameStatus = (firstTime) ? "Start the test" : 'Retest';
       if ((pieces != null) && (pieces.length != 0)) {
         pieces.forEach((element) {
-          element.state.setItInactive();
+          element.setItInactive();
         });
         movePuzzlePiecesBack();
       }
+      vibSoundCorridor.turnSoundsOff();
+      vibSoundCorridor.turnVibrationsOff();
       lightCorridor.clearAllLights();
     });
   }
@@ -106,38 +141,71 @@ class Choreographer
 
   void VibSoundCallback (bool vib) {
     if (vib) {
-      print ("Its vib");
+      if (beginVibKey == 1) {
+        curVibrationKeys++;
+        homePage.state.setVibrationCount(curVibrationKeys, totalVibrationKeys);
+      }
     }
     else {
-      print ("Its sound");
+      if (beginSoundKey == 1) {
+        curSoundKeys++;
+        homePage.state.setSoundCount(curSoundKeys, totalSoundKeys);
+      }
     }
   }
 
   void LightCallback (int key) {
-    lastLightKey = key;
-      print ("The key is $key");
+    if (key == beginLightKey) {
+      curLightKeys++;
+      homePage.state.setLightCount(curLightKeys, totalLightKeys);
+    }
+    print ("The key is $key");
   }
 
-  void moveBackIdlePieces ()
+  void display () async {
+    Widget okButton = FlatButton(
+      child: Text("Ok"),
+      onPressed: () {
+        Navigator.of(homePage.state.puzzleKey.currentContext, rootNavigator: true).pop();
+      },
+    );
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text("Results"),
+      content: Text("${getResultString()}"),
+      actions: [
+        okButton,
+      ],
+    );
+    await showDialog(
+        context: homePage.state.puzzleKey.currentContext,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return alert;
+        });
+    print ('Should not come here');
+  }
+
+  void moveBackIdlePieces  () async
   {
-    Timer.periodic(Duration(milliseconds: 1000), (timer) {
-      print ("moveBackIdlePieces timer");
+    timer1InProgress = true;
+    timer2 = Timer.periodic(Duration(milliseconds: 1000), (timer) {
+      print("moveBackIdlePieces timer");
       if (isReady()) {
         timer.cancel();
-        timer1InProgress = true;
       }
       else {
         //find the piece tha is not at home or destination\
         bool atHome, atDestination, noIdlePiecesFound;
         noIdlePiecesFound = false;
-        int totalPuzzlePieces = homePage.state.cols * homePage.state.rows;
-        int numOfCompletedPieces = 0;
+        totalPuzzlePieces = homePage.state.cols * homePage.state.rows;
+        numOfCompletedPieces = 0;
         List<int> listOfIdlers = List<int>();
         for (int i = 0; i < pieces.length; i++) {
           if (!pieces[i].filter) {
-            if (pieces[i].state.isMovable) {
-              atHome = pieces[i].state.atHome();
-              atDestination = pieces[i].state.atDestination();
+            if (pieces[i].isMovable) {
+              atHome = pieces[i].atHome();
+              atDestination = pieces[i].atDestination();
               if (!(atHome || atDestination)) {
                 listOfIdlers.add(i);
               }
@@ -147,42 +215,82 @@ class Choreographer
           }
         }
 
-        homePage.state.setPuzzleCompletion(numOfCompletedPieces, totalPuzzlePieces);
+        homePage.state.setPuzzleCompletion(
+            numOfCompletedPieces, totalPuzzlePieces);
         if (numOfCompletedPieces == totalPuzzlePieces) {
-          setStatusToReady();
+          print('Trying to display the results');
+          setStatusToReady(false);
+          homePage.state.setState(() {
+            homePage.state.lastResult = getResultString();
+            Scores.addString(getResultString());
+          });
+          display();
+          DateTime l1, l2;
+          int itemToBeMovedBack;
+          if (listOfIdlers.length > 1) {
+            l1 = pieces[listOfIdlers[0]].lastTime;
+            l2 = pieces[listOfIdlers[1]].lastTime;
+            if (l1.compareTo(l2) < 0) {
+              itemToBeMovedBack = listOfIdlers[0];
+            }
+            else {
+              itemToBeMovedBack = listOfIdlers[1];
+            }
+            pieces[itemToBeMovedBack].setCurPosToOrgPos();
+          }
         }
-
-        DateTime l1, l2;
-        int itemToBeMovedBack;
-        if (listOfIdlers.length > 1) {
-           l1 = pieces[listOfIdlers[0]].state.lastTime;
-           l2 = pieces[listOfIdlers[1]].state.lastTime;
-           if (l1.compareTo(l2) < 0) {
-             itemToBeMovedBack = listOfIdlers[0];
-           }
-           else {
-             itemToBeMovedBack = listOfIdlers[1];
-           }
-           //Move it back
-           // pieces[itemToBeMovedBack].setCurPosToOrgPos();
-          pieces[itemToBeMovedBack].state.movePieceBackToOrgPosition();
-        }
+        print("MTimer is still on");
       }
     });
   }
+
+  //Move it back
+  // pieces[itemToBeMovedBack].setCurPosToOrgPos();
+  ///pieces[itemToBeMovedBack].movePieceBackToOrgPosition();
 
   void movePuzzlePiecesBack ()
   {
     for (int i = 0; i < pieces.length; i++) {
       if (!pieces[i].filter) {
-        if (!pieces[i].state.atHome()) {
-          pieces[i].state.setCurPosToOrgPos();
+        if (!pieces[i].atHome()) {
+          pieces[i].setCurPosToOrgPos();
         }
       }
     }
   }
 
+
+  String getResultString () {
+    bool puzzleCompleted = false;
+    int events = 0;
+    String result = 'Need more work';
+
+    if (numOfCompletedPieces == totalPuzzlePieces) {
+      puzzleCompleted = true;
+    }
+    if (curVibrationKeys == totalVibrationKeys) {
+      ++events;
+    }
+    if (curSoundKeys == totalSoundKeys) {
+      ++events;
+    }
+    if (curLightKeys == totalLightKeys) {
+      ++events;
+    }
+    if (puzzleCompleted) {
+      if (events == 3) {
+        result = 'Fantastic job';
+      } else if (events == 2) {
+        result = 'Almost there';
+      } else if (events == 1) {
+        result = 'Getting there';
+      }
+    }
+    return result;
+  }
+
   void start() {
+
     gameTime = numberOfMinutes * 60;
     totalLightKeys = totalSoundKeys = totalVibrationKeys = 0;
     curLightKeys = curSoundKeys = curVibrationKeys = 0;
@@ -191,6 +299,7 @@ class Choreographer
     //Create timeline
     timeline = Timeline (2, 2, 2, lengthOfTimeLine: numberOfMinutes,numLights: numLights, numVibrations: numVibrations, numSounds: numSounds, numLightKeys: 6);
     timeline.create();
+
     index = 0;
 
     //Update light counts
@@ -199,72 +308,76 @@ class Choreographer
     homePage.state.setSoundCount(curSoundKeys, totalSoundKeys);
 
     //Start timer
-    Timer.periodic(Duration(milliseconds: 1000), (timer) {
+    timer1 = Timer.periodic(Duration(milliseconds: 1000), (timer) {
       if (gameTime > 0) {
         gameTime -= 1;
         homePage.state.setTimeRemaining(gameTime);
       }
       if (gameTime == 0) {
-        setStatusToReady();
+        setStatusToReady(false);
       }
       if (isReady()) {
         timer.cancel();
-        timer2InProgress = true;
       } else {
         //Get time unit
         Timeunit curTimeUnit = timeline.getTimeUnit(index);
         //Should we light on
-        if (curTimeUnit.lightActive) {
+        if (curTimeUnit.active) {
           if (curTimeUnit.startLight) {
             lightCorridor.turnLightOn(curTimeUnit.lightKey);
             totalLightKeys+=1;
             homePage.state.setLightCount(curLightKeys, totalLightKeys);
+            beginLightKey = curTimeUnit.lightKey;
             print ('Turning light on at $index and light number is ${curTimeUnit.lightKey}');
           }
         }
+
         //Should we turn the light off
-        if (curTimeUnit.lightActive) {
+        if (curTimeUnit.active) {
           if (curTimeUnit.stopLight) {
+            beginLightKey = 0;
             lightCorridor.turnLightOff(curTimeUnit.lightKey);
-            if (lastLightKey != 0) {
-              if (lastLightKey == curTimeUnit.lightKey) {
-                curLightKeys+=1;
-              homePage.state.setLightCount(curLightKeys, totalLightKeys);
-              }
-              lastLightKey = 0;
-            }
+            homePage.state.setLightCount(curLightKeys, totalLightKeys);
           }
+          lastLightKey = 0;
         }
 
 
       //Should we start the vibration
-      if (curTimeUnit.vibrationActive) {
+       if (curTimeUnit.active) {
         if (curTimeUnit.startVibrations) {
+          beginVibKey = 1;
+          totalVibrationKeys++;
           vibSoundCorridor.turnVibrationsOn();
+          homePage.state.setVibrationCount(curVibrationKeys, totalVibrationKeys);
           print ('Turning vibration on at $index}');
         }
       }
 
       //Should we stop the vibration
-      if (curTimeUnit.vibrationActive) {
+      if (curTimeUnit.active) {
         if (curTimeUnit.stopVibrations) {
-          vibSoundCorridor.turnVibrationsOff();
-          print ('Turning vibration off at $index}');
+           vibSoundCorridor.turnVibrationsOff();
+           beginVibKey = 0;
         }
+        print ('Turning vibration off at $index}');
       }
 
 
       //Should we start the sound
-      if (curTimeUnit.soundActive) {
+      if (curTimeUnit.active) {
         if (curTimeUnit.startSounds) {
+          beginSoundKey = 1;
+          totalSoundKeys++;
           vibSoundCorridor.turnSoundsOn();
-          print ('Turning sound on at $index}');
+          homePage.state.setSoundCount(curSoundKeys, totalSoundKeys);
         }
       }
 
       //Should we stop the sound
-      if (curTimeUnit.soundActive) {
+      if (curTimeUnit.active) {
         if (curTimeUnit.stopSounds) {
+          beginSoundKey = 0;
           vibSoundCorridor.turnSoundsOff();
           print ('Turning sound off at $index}');
         }
@@ -275,10 +388,11 @@ class Choreographer
         //Point to the next time slot
         index++;
       }
+      print("OTimer is still on");
     });
     moveBackIdlePieces();
     //Activate the pieces
-    pieces.forEach((element) {element.state.setItActive();});
+    pieces.forEach((element) {element.setItActive();});
   }
 
   void stop()
@@ -291,6 +405,13 @@ enum TimeunitStatus {
   Dormant,
   Inactive,
   Active
+}
+
+enum TimeLineEntries {
+ NoEntry,
+ LightEntry,
+ VibrationEntry,
+ SoundEntry
 }
 
 class Timeline {
@@ -315,102 +436,181 @@ class Timeline {
     return timeUnitList.length;
   }
 
-  List<int> ShuffleColumn(int numEntries, int defaultEntry, int colLength) {
+  List<TimeLineEntries> ShuffleColumn(int numLightEntries, int numVibEntries, int numSoundEntries, int defaultEntry, int colLength) {
     //Create the list
-    List<int> workingList = List<int> (colLength);
-    //Initialize the array with numEntries
-    for( int i = 0; i < numEntries; i++) {
-      workingList[i] = i;
+    List<TimeLineEntries> workingList = List<TimeLineEntries> (colLength);
+    //Initialize the remaining entries with the default
+    for( int i = 0; i < colLength; i++) {
+      workingList[i] = TimeLineEntries.NoEntry;
     }
 
-    //Initialize the remaining entries with the default
-    for( int i = numEntries; i < colLength; i++) {
-      workingList[i] = defaultEntry;
+    //Initialize the array with Light Entries
+    for( int i = 0; i < numLightEntries; i++) {
+      workingList[i] = TimeLineEntries.LightEntry;
+    }
+
+    //Initialize the remaining entries with Vibration Entries
+    for( int i = 0; i < numVibEntries; i++) {
+      workingList[i+numLightEntries] = TimeLineEntries.VibrationEntry;
+    }
+
+    //Initialize the remaining entries with Vibration Entries
+    for( int i = 0; i < numSoundEntries; i++) {
+      workingList[i+numLightEntries+numVibEntries] = TimeLineEntries.SoundEntry;
     }
 
     workingList.shuffle(Random(DateTime.now().millisecond));
     return workingList;
   }
 
+  void SetASectionActive(int index, int width) {
+    for ( int i = index; (i < (index+ width)) && (i < timeUnitList.length); i++ ) {
+      timeUnitList[i].active = true;
+    }
+  }
+
+  int FindNextSlotWithAnEvent(List<TimeLineEntries> entries, int index) {
+    int emptySlot = -1;
+    for (int i = index; i < entries.length; i++ ) {
+      if (entries[i] != TimeLineEntries.NoEntry) {
+        emptySlot = i;
+        break;
+      }
+    }
+    return emptySlot;
+  }
+
+  bool isThereEnoughSpace (List<Timeunit> entries, int index, int width) {
+    int i = index;
+    bool found = true;
+    int j = 0;
+    while (((i+j) < entries.length) && (j < width)) {
+      if (entries[i+j].active) {
+        found = false;
+        break;
+      }
+      j++;
+    }
+    if ((i+j) == entries.length) {
+      found = false;
+    }
+    return found;
+  }
+
+  int FindNextEmptyTimelineSlot( List<Timeunit> entries, int index) {
+    int emptySlot = -1;
+    for (int i = index; i < entries.length; i++ ) {
+      if (!entries[i].active) {
+        emptySlot = i;
+        break;
+      }
+    }
+    if (emptySlot == -1) {
+      for (int i = 0; i < index; i++ ) {
+        if (!entries[i].active) {
+          emptySlot = i;
+          break;
+        }
+      }
+    }
+    return emptySlot;
+  }
+
   void create() {
     int totalNumOfLights, totalNumOfVibrations, totalNumOfSounds, totalTimeUnits;
     //Number of lights
     totalNumOfLights = lengthOfTimeLine * numLights;
+    print ("totalNumOfLights $totalNumOfLights");
 
     //Number of vibrations
     totalNumOfVibrations = lengthOfTimeLine * numVibrations;
+    print ('totalNumOfVibrations $totalNumOfVibrations');
 
     //Number of sounds
     totalNumOfSounds = lengthOfTimeLine * numSounds;
+    print ('totalNumOfSounds $totalNumOfSounds');
 
     //Number of time units to create
     totalTimeUnits = lengthOfTimeLine * 60;
 
     //Create time units
-    timeUnitList = List<Timeunit> (totalTimeUnits + 10);
+    timeUnitList = List<Timeunit> (totalTimeUnits);
     for(int i=0; i <  timeUnitList.length; i++) {
       timeUnitList[i] = Timeunit();
     }
 
+//    List<TimeLineEntries> ShuffleColumn(int numLightEntries, int numVibEntries, int numSoundEntries, int defaultEntry, int colLength) {
 
     //Setup light timeline
-    int defaultLightEntry = 1000;
-    List<int> lightTriggers = ShuffleColumn(totalNumOfLights, defaultLightEntry, lengthOfTimeLine*60);
+    int defaultEntry = 1000;
+    List<TimeLineEntries> lightTriggers = ShuffleColumn(totalNumOfLights, totalNumOfVibrations, totalNumOfSounds, defaultEntry, lengthOfTimeLine*60);
+
     //Add it to the timeline
     var randomKey = new Random();
-    for (int i=0; i < totalTimeUnits; i++) {
-      if (lightTriggers[i] != defaultLightEntry) {
-        if (!timeUnitList[i].lightActive) {
-          timeUnitList[i].lightActive = true;
-          timeUnitList[i].startLight = true;
-          timeUnitList[i].lightKey = randomKey.nextInt(numLightKeys) + 1;
-
-          //Setup light stop key
-          timeUnitList[i+lightWidth].lightActive = true;
-          timeUnitList[i+lightWidth].stopLight = true;
-          timeUnitList[i+lightWidth].lightKey = timeUnitList[i].lightKey;
-        }
-      }
+    int maxWidth = soundWidth;
+    if ((lightWidth > soundWidth) && (lightWidth > vibrationWidth)){
+      maxWidth = lightWidth;
+    } else if ((vibrationWidth > soundWidth) && (vibrationWidth > lightWidth)) {
+      maxWidth = vibrationWidth;
     }
-
-    //Setup vibrations timeline
-    int defaultVibEntry = 1000;
-    List<int> vibTriggers = ShuffleColumn(totalNumOfVibrations, defaultVibEntry, lengthOfTimeLine*60);
-    for (int i=0; i < totalTimeUnits; i++) {
-      if (vibTriggers[i] != defaultVibEntry) {
-        if (!timeUnitList[i].vibrationActive) {
-          timeUnitList[i].vibrationActive = true;
-          timeUnitList[i].startVibrations = true;
-
-          //Setup light stop key
-          timeUnitList[i + vibrationWidth].vibrationActive = true;
-          timeUnitList[i + vibrationWidth].stopVibrations = true;
-        }
+    int i = 0;
+    while (i < totalTimeUnits) {
+      i = FindNextSlotWithAnEvent(lightTriggers, i);
+      if (-1 == i) {
+        break;
       }
-    }
+      int nextEmptySlot = FindNextEmptyTimelineSlot(timeUnitList, i);
+      if (nextEmptySlot != -1) {
+         if (isThereEnoughSpace(timeUnitList, nextEmptySlot, maxWidth)) {
+            if (lightTriggers[i] == TimeLineEntries.LightEntry) {
+              timeUnitList[nextEmptySlot].active = true;
+              timeUnitList[nextEmptySlot].startLight = true;
+              timeUnitList[nextEmptySlot].lightKey = randomKey.nextInt(numLightKeys) + 1;
 
-    //Setup sounds timeline
-    int defaultSoundEntry = 1000;
-    List<int> soundTriggers = ShuffleColumn(totalNumOfSounds, defaultSoundEntry, lengthOfTimeLine*60);
-    for (int i=0; i < totalTimeUnits; i++) {
-      if (soundTriggers[i] != defaultSoundEntry) {
-        if (!timeUnitList[i].soundActive) {
-          timeUnitList[i].soundActive = true;
-          timeUnitList[i].startSounds = true;
+              //Setup light stop key
+              timeUnitList[nextEmptySlot+lightWidth].active = true;
+              timeUnitList[nextEmptySlot+lightWidth].stopLight = true;
+              timeUnitList[nextEmptySlot+lightWidth].lightKey = timeUnitList[nextEmptySlot].lightKey;
 
-          //Setup light stop key
-          timeUnitList[i + soundWidth].soundActive = true;
-          timeUnitList[i + soundWidth].stopSounds = true;
-        }
+              //Block
+              SetASectionActive(nextEmptySlot+1, lightWidth);
+            } else if (lightTriggers[i] == TimeLineEntries.VibrationEntry) {
+              timeUnitList[nextEmptySlot].active = true;
+              timeUnitList[nextEmptySlot].startVibrations = true;
+
+              //Setup Vibration stop key
+              timeUnitList[nextEmptySlot + vibrationWidth].active = true;
+              timeUnitList[nextEmptySlot + vibrationWidth].stopVibrations = true;
+
+              //Block
+              SetASectionActive(nextEmptySlot+1, vibrationWidth);
+            } else if (lightTriggers[i] == TimeLineEntries.SoundEntry) {
+              timeUnitList[nextEmptySlot].active = true;
+              timeUnitList[nextEmptySlot].startSounds = true;
+
+              //Setup Sound stop key
+              timeUnitList[nextEmptySlot + soundWidth].active = true;
+              timeUnitList[nextEmptySlot + soundWidth].stopSounds = true;
+
+              //Block
+              SetASectionActive(nextEmptySlot+1, soundWidth);
+            }
+         }
+      } else {
+        break;
       }
-    }
+      i++;
+  }
+  int x = 1;
+  timeUnitList.forEach((element) {
+    print (" $x Active ${element.active} ${element.startLight} ${element.stopLight} ${element.startVibrations} ${element.stopVibrations} ${element.startSounds} ${element.stopSounds} ${element.lightKey}");
+    x++;
+    });
   }
 }
 
 class Timeunit {
-  bool lightActive = false;
-  bool vibrationActive= false;
-  bool soundActive = false;
+  bool active = false;
   bool startLight =  false;
   bool stopLight = false;
   bool startVibrations = false;

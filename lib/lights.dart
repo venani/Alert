@@ -117,7 +117,7 @@ class _LightState extends State<Light> {
           child: new Icon(
             Icons.lightbulb,
             color: Colors.white,
-            size: 20.0,
+            size: widget.lightCorridorSize.width,
           ),
           shape: new CircleBorder(),
           color: curColor,

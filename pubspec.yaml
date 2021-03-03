@@ -34,7 +34,8 @@ dependencies:
   audioplayers: ^0.17.1
   shared_preferences: ^0.5.12+4
   provider: ^3.0.0+1
-  slide_countdown_clock: ^1.0.3
+  get: ^3.25.6
+
 
 dev_dependencies:
   flutter_test:
