@@ -119,7 +119,7 @@ class _LightState extends State<Light> {
             color: Colors.white,
             size: widget.lightCorridorSize.width,
           ),
-          shape: new CircleBorder(),
+          shape: new CircleBorder(side: BorderSide(width: 3.0, color: Colors.yellow)),
           color: curColor,
         )
         //child: Text('A'),

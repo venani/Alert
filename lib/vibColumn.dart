@@ -130,9 +130,9 @@ class _VibSoundButtonState extends State<VibSoundButton> {
           child: new Icon(
             (widget.vibSoundType == VibSoundType.Vibration) ? Icons.vibration : Icons.music_note,
             color: Colors.white,
-            size: widget.vibCorridorSize.width,
+            size: widget.vibCorridorSize.width-2.0,
           ),
-          shape: new CircleBorder(),
+          shape: new CircleBorder(side: BorderSide(width: 3.0, color: Colors.yellow)),
           color: curColor,
         )
     );

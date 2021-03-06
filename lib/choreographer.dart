@@ -50,12 +50,15 @@ class Choreographer
   int beginLightKey = 0;
   int beginVibKey = 0;
   int beginSoundKey = 0;
+  String readyText = "Start the test";
 
   Choreographer ({this.lightCorridor, this.vibSoundCorridor, this.homePage}) {
     lightCorridor.setCallback(LightCallback);
     vibSoundCorridor.setClickCallBack(VibSoundCallback);
     numLights = numVibrations = numSounds = Level.getEventComplexity(homePage.levelNumber);
-    setStatusToReady(true);
+    if (homePage.state == null) {
+      homePage.state.gameStatus = readyText;
+    }
   }
 
   void dispose ()
@@ -74,36 +77,29 @@ class Choreographer
     numberOfMinutes = numMinutes;
   }
 
-  void setStatusToReady(bool firstTime) {
-    homePage.state.setState(() {
-      if (timer1 != null) {
-        timer1.cancel();
-        timer1 = null;
-      }
-      if (timer2 != null) {
-        timer2.cancel();
-        timer2 = null;
-      }
-      Widget cancelButton = FlatButton(
-        child: Text("Yes"),
-        onPressed:  () {},
-      );
-      Widget continueButton = FlatButton(
-        child: Text("No"),
-        onPressed:  () {},
-      );
-      // set up the AlertDialog
-      AlertDialog alert = AlertDialog(
-        title: Text("AlertDialog"),
-        content: Text("Do you really want to cancel?"),
-        actions: [
-          cancelButton,
-          continueButton,
-        ],
-      );
+  void justWait () async {
+    while( timer1InProgress || timer2InProgress ) {
+     await Future.delayed(Duration(milliseconds: 10));
+    }
+  }
 
+  void setStatusToReady(bool firstTime)  async {
+    if (timer1 != null) {
+      timer1.cancel();
+      timer1 = null;
+    }
+    if (timer2 != null) {
+      timer2.cancel();
+      timer2 = null;
+    }
+    justWait();
+
+    homePage.state.setState(()  {
+      homePage.state.gameStatus = "Please wait";
       curStatus = ChoreographerStatus.Ready;
-//      Get.dialog((alert));
+
+      //Wait for the timers to exit
+
       homePage.state.gameStatus = (firstTime) ? "Start the test" : 'Retest';
       if ((pieces != null) && (pieces.length != 0)) {
         pieces.forEach((element) {
@@ -163,17 +159,91 @@ class Choreographer
   }
 
   void display () async {
-    Widget okButton = FlatButton(
-      child: Text("Ok"),
+    String lightString, vibrationString, soundString, puzzleString;
+    puzzleString = (numOfCompletedPieces == totalPuzzlePieces) ? 'Completed' : 'Incomplete';
+    lightString = (curLightKeys == totalLightKeys) ? 'No misses' : 'missed ${(totalLightKeys - curLightKeys)}';
+    vibrationString = (curVibrationKeys == totalVibrationKeys) ? 'No misses' : 'missed ${(totalVibrationKeys - curVibrationKeys)}';
+    soundString = (curSoundKeys == totalSoundKeys) ? 'No misses' : 'missed ${(totalSoundKeys - curSoundKeys)}';
+    Widget okButton = TextButton(
+      child: Text("Ok", style: TextStyle(color:Colors.white)),
+      style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
       onPressed: () {
         Navigator.of(homePage.state.puzzleKey.currentContext, rootNavigator: true).pop();
       },
     );
     // set up the AlertDialog
     AlertDialog alert = AlertDialog(
-      title: Text("Results"),
-      content: Text("${getResultString()}"),
-      actions: [
+      backgroundColor: Colors.lightBlueAccent,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18.0),
+          side: BorderSide(color: Colors.black)
+      ),
+      title: Container(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(child: Text('Results', style: TextStyle(color: Colors.black, fontSize: 30))),
+            Text(' '),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    RawMaterialButton(child: Text('Puzzle:',style: TextStyle(color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))),
+                    Text('$puzzleString', style: TextStyle(color: Colors.black),),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    RawMaterialButton(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: EdgeInsets.all(0.0),
+                        shape: new CircleBorder(side: BorderSide(width: 1.0, color: Colors.yellow)),
+                        fillColor: Colors.black,
+                        child: Icon(Icons.lightbulb, color: Colors.yellow)),
+                    Text(lightString, style: TextStyle(color: Colors.black),),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    RawMaterialButton(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: EdgeInsets.all(0.0),
+                        shape: new CircleBorder(side: BorderSide(width: 1.0, color: Colors.yellow)),
+                        fillColor: Colors.black,
+                        child: Icon(Icons.vibration, color: Colors.yellow)),
+                    Text(vibrationString, style: TextStyle(color: Colors.black),),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    RawMaterialButton(
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        padding: EdgeInsets.all(0.0),
+                        shape: new CircleBorder(side: BorderSide(width: 1.0, color: Colors.yellow)),
+                        fillColor: Colors.black,
+                        child: Icon(Icons.music_note, color: Colors.yellow)),
+                    Text(soundString, style: TextStyle(color: Colors.black)),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    RawMaterialButton(child: Text('Overall:',style: TextStyle(color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))),
+                    Text('${getResultString()}', style: TextStyle(color: Colors.black),),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      //content: Container(color: Colors.blue, child: Text("")),
+    actions: [
         okButton,
       ],
     );
@@ -183,13 +253,13 @@ class Choreographer
         builder: (BuildContext context) {
           return alert;
         });
-    print ('Should not come here');
   }
 
   void moveBackIdlePieces  () async
   {
-    timer1InProgress = true;
+    timer2InProgress = false;
     timer2 = Timer.periodic(Duration(milliseconds: 1000), (timer) {
+      timer2InProgress = true;
       print("moveBackIdlePieces timer");
       if (isReady()) {
         timer.cancel();
@@ -225,6 +295,7 @@ class Choreographer
             Scores.addString(getResultString());
           });
           display();
+        } else {
           DateTime l1, l2;
           int itemToBeMovedBack;
           if (listOfIdlers.length > 1) {
@@ -241,6 +312,7 @@ class Choreographer
         }
         print("MTimer is still on");
       }
+      timer2InProgress = false;
     });
   }
 
@@ -263,7 +335,7 @@ class Choreographer
   String getResultString () {
     bool puzzleCompleted = false;
     int events = 0;
-    String result = 'Need more work';
+    String result = 'More effort';
 
     if (numOfCompletedPieces == totalPuzzlePieces) {
       puzzleCompleted = true;
@@ -279,11 +351,11 @@ class Choreographer
     }
     if (puzzleCompleted) {
       if (events == 3) {
-        result = 'Fantastic job';
+        result = 'Fantastic';
       } else if (events == 2) {
-        result = 'Almost there';
+        result = 'Good';
       } else if (events == 1) {
-        result = 'Getting there';
+        result = 'More effort';
       }
     }
     return result;
@@ -308,7 +380,9 @@ class Choreographer
     homePage.state.setSoundCount(curSoundKeys, totalSoundKeys);
 
     //Start timer
+    timer1InProgress = false;
     timer1 = Timer.periodic(Duration(milliseconds: 1000), (timer) {
+      timer1InProgress = true;
       if (gameTime > 0) {
         gameTime -= 1;
         homePage.state.setTimeRemaining(gameTime);
@@ -363,7 +437,6 @@ class Choreographer
         print ('Turning vibration off at $index}');
       }
 
-
       //Should we start the sound
       if (curTimeUnit.active) {
         if (curTimeUnit.startSounds) {
@@ -392,7 +465,10 @@ class Choreographer
     });
     moveBackIdlePieces();
     //Activate the pieces
-    pieces.forEach((element) {element.setItActive();});
+    pieces.forEach((element) {element.setItActive();
+    timer1InProgress = false;
+    });
+
   }
 
   void stop()

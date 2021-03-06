@@ -19,45 +19,50 @@ import 'dart:math';
 import 'level.dart';
 import 'dart:core';
 import 'choreographer.dart';
-
-SharedPreferences theStorage;
+import 'package:flutter_is_emulator/flutter_is_emulator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  theStorage = await SharedPreferences.getInstance();
+  Storage.getStorage();
   runApp(MindfullnessAlertExcerciserApp());
 }
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
-  @override void initState() async {
-    Scores.items = await theStorage.getStringList(Scores.storageKey);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: MyHomePage(title: 'Mindfull Application', levelNumber: 1,),
-    );
-  }
-}
+// class MyApp extends StatelessWidget {
+//   // This widget is the root of your application.
+//   @override void initState() async {
+//     theStorage = await SharedPreferences.getInstance();
+//     Scores.items = await theStorage.getStringList(Scores.storageKey);
+//     if (theStorage == null) {
+//       print("It is null");
+//     } else {
+//       print("It is not null");
+//     }
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'Flutter Demo',
+//       theme: ThemeData(
+//         // This is the theme of your application.
+//         //
+//         // Try running your application with "flutter run". You'll see the
+//         // application has a blue toolbar. Then, without quitting the app, try
+//         // changing the primarySwatch below to Colors.green and then invoke
+//         // "hot reload" (press "r" in the console where you ran "flutter run",
+//         // or simply save your changes to "hot reload" in a Flutter IDE).
+//         // Notice that the counter didn't reset back to zero; the application
+//         // is not restarted.
+//         primarySwatch: Colors.blue,
+//         // This makes the visual density adapt to the platform that you run
+//         // the app on. For desktop platforms, the controls will be smaller and
+//         // closer together (more dense) than on mobile platforms.
+//         visualDensity: VisualDensity.adaptivePlatformDensity,
+//       ),
+//       home: MyHomePage(title: 'Mindfull Application', levelNumber: 1,),
+//     );
+//   }
+// }
 
 class MyHomePage extends StatefulWidget {
   final String title;
@@ -108,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String  lightCount = '0/0';
   String  vibrationCount = '0/0';
   String  soundCount = '0/0';
-  String  gameStatus = 'Temp';
+  String  gameStatus = 'Start the test';
   int rows = 0;
   int cols = 0;
   int lightRate = 0;
@@ -523,6 +528,22 @@ class _MyHomePageState extends State<MyHomePage> {
     print('initState');
   }
 
+  void showMessageDialog(BuildContext context, String text) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(8.0))
+          ),
+          backgroundColor: Colors.black87,
+          content: Text ('Please wait'),
+        );
+      },
+    );
+  }
+
   void dispose () {
     super.dispose();
     print ("dispose is called");
@@ -568,166 +589,182 @@ class _MyHomePageState extends State<MyHomePage> {
       print("size of pieces is ${pieces.length}");
     }
 
-    if (widget.displayResultsNow) {
-      widget.displayResultsNow = false;
-      String results = choreography.getResultString();
-      showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context)  {
-            return AlertDialog(
-                title: Text("AlertDialog"),
-                content: Text("Do you really want to cancel?"),
-                actions: <Widget>[
-                  FlatButton(
-                    child: Text("Ok"),
-                    onPressed: () {
-                      Navigator.of(context, rootNavigator: true).pop();
-                      Navigator.of(context, rootNavigator: true).pop();
-                    },
-                  )
-                ]
-            );
-          }
-      );
-    } else {
-      return WillPopScope (
-        onWillPop: () {
-          if (choreography.isReady())
-            return Future.value(true);
-          else
-            return Future.value(false);
-        },
-        child: Scaffold(
-            appBar: AppBar(
-              //Here we take the value from the MyHomePage object that was created by
-              //the App.build method, and use it to set our appbar title.
-              title: Text(widget.title),
-            ),
-            body: Container(
-              decoration: new BoxDecoration(
-                  gradient: new LinearGradient(
+    return WillPopScope (
+      onWillPop: ()  {
+        if (choreography.isReady())
+          return Future.value(true);
+        else
+          return Future.value(false);
+      },
+      child: Scaffold(
+          appBar: AppBar(
+            //Here we take the value from the MyHomePage object that was created by
+            //the App.build method, and use it to set our appbar title.
+            title: Text(widget.title),
+          ),
+          body: Container(
+            color: Colors.black,
+            child: SafeArea(
+              child: Container(
+                decoration: new BoxDecoration(
+                    gradient: new LinearGradient(
 //                    colors: [const Color(0xFF000046), const Color(0xFF1CB5E0)],
-                      colors: [Colors.indigo, Colors.black],
-                      begin: Alignment.topRight,
-                      end: Alignment.bottomLeft)),
-              child: Column(
-                children: [
-                  Expanded(
-                      flex: 2,
-                      child: Row(
-                          key: timerKey,
-                          children: [
-                            Expanded(flex: 3, child: Column( children: [
-                              Text('Comp %',style: TextStyle(color: Colors.white)),
-                              Text('$puzzleCompletion', style: TextStyle(color: Colors.white),)])),
-                            Expanded(flex: 3, child: Column( children: [
-                              Icon(Icons.lightbulb, color: Colors.white),
-                              Text('$lightCount', style: TextStyle(color: Colors.white),)])),
-                            Expanded(flex: 3, child: Column( children: [
-                              Icon(Icons.vibration, color: Colors.white),
-                              Text('$vibrationCount', style: TextStyle(color: Colors.white),)])),
-                            Expanded(flex: 3, child: Column( children: [
-                              Icon(Icons.music_note, color: Colors.white),
-                              Text('$soundCount', style: TextStyle(color: Colors.white))])),
-                          ]
-                      )
-                  ),
-//9841267072
-                  Expanded(
-                    flex: 18,
-                    child: Row(
-                      children: [
-                        Expanded(
-                            flex: 2,
-                            key: lightCorridorKey,
-                            child: Stack(
-                             children: [
-                            Positioned(
-                              child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                                 children: [
-                                   Text(" Level", style: TextStyle(color: Colors.white)),
-                                   Text(" ${widget.levelNumber}", style: TextStyle(color: Colors.white)),
-                                 ],
-                               ),
-                            ),
-                               Positioned(child: Stack(children: lightPieces)),
-                             ],
-                            ),
-                            ),
-                        Expanded(
-                            key: puzzleKey,
-                            flex: 8,
-                            child: Stack(children: pieces)),
-                        Expanded(
-                            key: vibSoundCorridorKey,
-                            flex: 2,
-                            child: Stack(
-                              children: [
-                                Positioned(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Text("Seconds", style: TextStyle(color: Colors.white)),
-                                      Text("$timeRemaining", style: TextStyle(color: Colors.white)),
-                                    ],
-                                  ),
-                                ),
-                                Positioned(
-                                  child: Stack(children: vibSoundButtons)),]
-                            )),
-                      ],
+                        colors: [Colors.indigo, Colors.black, Colors.black],
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft)),
+                child: Column(
+                  children: [
+                    Expanded(
+                        flex: 2,
+                        child: Row(
+                            key: timerKey,
+                            children: [
+                              Expanded(flex: 3, child: Column( children: [
+                                Text('Comp %',style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
+                                Text('$puzzleCompletion', style: TextStyle(color: Colors.white),)])),
+                              Expanded(flex: 3, child: Column( children: [
+                                Icon(Icons.lightbulb, color: Colors.yellow),
+                                Text('$lightCount', style: TextStyle(color: Colors.white),)])),
+                              Expanded(flex: 3, child: Column( children: [
+                                Icon(Icons.vibration, color: Colors.yellow),
+                                Text('$vibrationCount', style: TextStyle(color: Colors.white),)])),
+                              Expanded(flex: 3, child: Column( children: [
+                                Icon(Icons.music_note, color: Colors.yellow),
+                                Text('$soundCount', style: TextStyle(color: Colors.white))])),
+                            ]
+                        )
                     ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Column(
-                      children: [
-                        Spacer(flex: 1),
-                        Text('Last Result: $lastResult', style: TextStyle(color: Colors.white)),
-                        Spacer(flex: 1),
-                        FloatingActionButton.extended(onPressed: () {
-                          if (choreography.isReady()) {
-                            choreography.setStatusToProgress();
-                          } else if (choreography.isProgressing()) {
-                            showDialog(
+                    Expanded(
+                      flex: 18,
+                      child: Row(
+                        children: [
+                          Expanded(
+                              flex: 2,
+                              key: lightCorridorKey,
+                              child: Stack(
+                               children: [
+                              Positioned(
+                                child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                   children: [
+                                     Text("  Level", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
+                                     Text("  ${widget.levelNumber}", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                   ],
+                                 ),
+                              ),
+                                 Positioned(child: Stack(children: lightPieces)),
+                               ],
+                              ),
+                              ),
+                          Expanded(
+                              key: puzzleKey,
+                              flex: 8,
+                              child: Stack(children: pieces)),
+                          Expanded(
+                              key: vibSoundCorridorKey,
+                              flex: 2,
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Text("Secs", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
+                                        Text("$timeRemaining", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                  Positioned(
+                                    child: Stack(children: vibSoundButtons)),]
+                              )),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 3,
+                      child: Column(
+                        children: [
+                          Spacer(flex: 1),
+                          Text('Last Result: $lastResult', style: TextStyle(color: Colors.white)),
+                          Spacer(flex: 1),
+                          FloatingActionButton.extended(onPressed: () async {
+                            bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
+                            if (await Vibration.hasVibrator() || simulator) {
+                              if (choreography.isReady()) {
+                                choreography.setStatusToProgress();
+                              } else if (choreography.isProgressing()) {
+                                showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                          title: Column(),
+                                          content: Text(
+                                              "Do you really want to cancel?"),
+                                          actions: <Widget>[
+                                            TextButton(
+                                              child: Text("Yes"),
+                                              onPressed: () {
+                                                choreography.setStatusToReady(
+                                                    false);
+                                                Navigator.of(context,
+                                                    rootNavigator: true).pop();
+                                                Navigator.of(context,
+                                                    rootNavigator: true).pop();
+                                              },
+                                            ),
+                                            TextButton(
+                                              child: Text("No"),
+                                              onPressed: () {
+                                                Navigator.of(context,
+                                                    rootNavigator: true).pop();
+                                              },
+                                            )
+                                          ]
+                                      );
+                                    }
+                                );
+                              }
+                            } else {
+                              Widget okButton = TextButton(
+                                child: Text("Ok", style: TextStyle(color:Colors.white)),
+                                style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
+                                onPressed: () {
+                                  Navigator.of(context, rootNavigator: true).pop();
+                                }
+                              );
+                              AlertDialog alert = AlertDialog(
+                                backgroundColor: Colors.lightBlueAccent,
+                                shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18.0),
+                                side: BorderSide(color: Colors.black)
+                              ),
+                              title: Text('Please enable vibration in settings'),
+                              //content: Container(color: Colors.blue, child: Text("")),
+                              actions: [
+                                okButton,
+                              ],
+                              );
+                              await showDialog(
                                 context: context,
                                 barrierDismissible: false,
-                                builder: (BuildContext context)  {
-                                  return AlertDialog (
-                                      title: Text("AlertDialog"),
-                                      content: Text("Do you really want to cancel?"),
-                                      actions: <Widget>[
-                                        FlatButton(
-                                          child: Text("Yes"),
-                                          onPressed:  () async {
-                                            Navigator.of(context, rootNavigator: true).pop();
-                                            Navigator.of(context, rootNavigator: true).pop();
-                                          },
-                                        ),
-                                        FlatButton(
-                                          child: Text("No"),
-                                          onPressed:  () {
-                                            Navigator.of(context, rootNavigator: true).pop();
-                                          },
-                                        )]
-                                  );
-                                }
-                            );
-                          }
-                        },
-                          label: Text('$gameStatus'), //shape: RoundedRectangleBorder(),
-                        ),
-                        Spacer(flex: 1)
-                      ],
-                    ),
-                  )
-                ],
+                                builder: (BuildContext context) {
+                              return alert;
+                              });
+                            }
+                          },
+                            label: Text('$gameStatus'), //shape: RoundedRectangleBorder(),
+                          ),
+                          Spacer(flex: 1)
+                        ],
+                      ),
+                    )
+                  ],
+                ),
               ),
-            )),
-      );
-    }
+            ),
+          )),
+    );
   }
 }
 
@@ -754,8 +791,14 @@ showAlertDialog (BuildContext context) {
 }
 
 
-class MindfullnessAlertExcerciserApp extends StatelessWidget {
+class MindfullnessAlertExcerciserApp extends StatefulWidget {
   MindfullnessAlertExcerciserApp();
+
+  @override
+  _MindfullnessAlertExcerciserAppState createState() => _MindfullnessAlertExcerciserAppState();
+}
+
+class _MindfullnessAlertExcerciserAppState extends State<MindfullnessAlertExcerciserApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp (
@@ -777,6 +820,9 @@ class LevelData {
 }
 
 class StartApp extends StatelessWidget {
+  StartApp () {
+
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold ( backgroundColor: Color(0xFF01579B) ,
@@ -793,50 +839,90 @@ class StartApp extends StatelessWidget {
           Expanded(
             flex: 8,
             child: Container(
+              padding: EdgeInsets.all(10) ,
               decoration: BoxDecoration (
                 color: Colors.white,
                 border: Border.all(
                   color: Colors.black,
-                  width: 4,
+                  width: 5,
+                  style: BorderStyle.solid
                 )
               ),
-              child: GridView.builder(
-                itemCount: 21,
-                scrollDirection: Axis.vertical,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10.0,
-                  mainAxisSpacing: 10.0,
-                ),
-                itemBuilder: (BuildContext context, int index) {
-                  return FloatingActionButton.extended(
-                    onPressed: () {
-                      Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => MyHomePage(title: "Mindfulness Alertness Exerciser",
-                              levelNumber: (index+1))));
-                    },
-                    heroTag: 'thecontact$index',
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    label: Container(
-                      alignment: Alignment.center,
-                      child: Center(
-                        child: Column( crossAxisAlignment: CrossAxisAlignment.center , mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('Level - ${index + 1}',  style: TextStyle( decoration: TextDecoration.underline, fontWeight: FontWeight.bold),),
-                            Text('Size - ${Level.getPuzzleComplexity(index + 1)}'),
-                            Text('Events - ${Level.getEventComplexity(index + 1)}'),
-                          ],
-                        ),
+              child: Scrollbar(
+                isAlwaysShown: true,
+                thickness: 5,
+                child: GridView.builder(
+                  itemCount: 21,
+                  padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
+                  scrollDirection: Axis.vertical,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 10.0,
+                    mainAxisSpacing: 10.0,
+                  ),
+                  itemBuilder: (BuildContext context, int index) {
+                    return FloatingActionButton.extended(
+                      elevation: 10,
+                      onPressed: () async {
+                        bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
+                        if (await Vibration.hasVibrator() || simulator) {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) =>
+                                  MyHomePage(
+                                      title: "Mindfulness Alertness Exerciser",
+                                      levelNumber: (index + 1))));
+                        }
+                        else {
+                          Widget okButton = TextButton(
+                            child: Text("Ok", style: TextStyle(color:Colors.white)),
+                            style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
+                            onPressed: () {
+                              Navigator.of(context, rootNavigator: true).pop();
+                            },
+                          );
+                          AlertDialog alert = AlertDialog(
+                            backgroundColor: Colors.lightBlueAccent,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18.0),
+                                side: BorderSide(color: Colors.black)
+                            ),
+                            title: Text('Please enable vibration in settings'),
+                            //content: Container(color: Colors.blue, child: Text("")),
+                            actions: [
+                              okButton,
+                            ],
+                          );
+                          await showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (BuildContext context) {
+                                return alert;
+                              });
+                        }
+                      },
+                      heroTag: 'thecontact$index',
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(15)),
-                    ),
-                  );
-                  // Text("${(levelData[index].levelNumber)} this is a long text test");
-                },
+                      label: Container(
+                        alignment: Alignment.center,
+                        child: Center(
+                          child: Column( crossAxisAlignment: CrossAxisAlignment.center , mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Level - ${index + 1}',  style: TextStyle( decoration: TextDecoration.underline, fontWeight: FontWeight.bold),),
+                              Text('Size - ${Level.getPuzzleComplexity(index + 1)}'),
+                              Text('Events - ${Level.getEventComplexity(index + 1)}'),
+                            ],
+                          ),
+                        ),
+                        decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(15)),
+                      ),
+                    );
+                    // Text("${(levelData[index].levelNumber)} this is a long text test");
+                  },
+                ),
               ),
               // child: ListView.builder(
               //   itemCount: levelData.length,
@@ -897,29 +983,60 @@ class Instructions extends StatelessWidget {
   }
 }
 
+class Storage {
+  static SharedPreferences storage = null;
+  static List<String> items = [];
 
-class Scores extends StatelessWidget {
+  static Future<SharedPreferences> getStorage() async {
+    if (storage == null) {
+      storage = await SharedPreferences.getInstance();
+    }
+    return storage;
+  }
+
+  static List<String> getList(String key) {
+    items = storage.getStringList(key);
+    return items;
+  }
+}
+
+class Scores extends StatefulWidget {
   static const int size = 20;
   static const String storageKey = 'Scores';
-  static List<String> items = List<String>();
-  static String getItem(int index) {
+  static String getItem(int index)  {
+    List<String> items = getList();
     return items[index];
   }
-  static addString (String entry) async {
-    print('item added: $entry');
-    if (size == items.length) {
-      items.removeLast();
+
+  static List<String> getList() {
+    List<String> items =  Storage.getList(storageKey);
+    if (items == null) {
+      return [''];
     }
-    items.add(entry);
-    bool done = await theStorage.setStringList(Scores.storageKey, Scores.items);
-    print ('The entry is: $entry and done status is $done');
+    return items;
+  }
+
+  static void addString (String entry) async {
+      print('item added: $entry');
+      List<String> items = await getList();
+      if (size == items.length) {
+        items.removeLast();
+      }
+      items.add(entry);
+      SharedPreferences curStorage = await Storage.getStorage();
+      curStorage.setStringList(storageKey, items);
   }
 
   @override
-  Widget build(BuildContext context) {
-    print ("NUmber of items in the list are ${items.length}");
+  _ScoresState createState() => _ScoresState();
+}
+
+class _ScoresState extends State<Scores> {
+
+  @override
+  Widget build(BuildContext context)  {
     return Scaffold(
-        appBar: AppBar(title: Text("Scores will come here", style: TextStyle(color:Colors.indigo)),),
+        appBar: AppBar(title: Text("Scores", style: TextStyle(color:Colors.indigo)),),
         body: Column (
 
     children: [
@@ -933,11 +1050,11 @@ class Scores extends StatelessWidget {
                width: 4,
              )
          ),         child: ListView.builder(
-         itemCount: Scores.items.length,
+         itemCount: Scores.getList().length,
          itemBuilder: (context, index) {
            return Card(color: Colors.purple,
                borderOnForeground: true,
-               child: ListTile(subtitle: Text('Test'),title: Text("${Scores.getItem(index)}", style: TextStyle(color:Colors.white, fontSize: 20))));
+               child: ListTile(subtitle: Text('Test'),title: Text("${Scores.getList()[index]}", style: TextStyle(color:Colors.white, fontSize: 20))));
          }),
        ),
      )]
