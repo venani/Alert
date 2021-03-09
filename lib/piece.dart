@@ -202,12 +202,10 @@ class PieceState extends State<Piece> {
                   double xRightLimit = (widget.maxCol - widget.col - 1) * widget.pieceSize.width/2 +
                       2.0 * widget.xCenterOffset;
                   if ((tX >= xLeftLimit) && (tX <= (xRightLimit))) {
-                    print ('Crossed the xlimit check');
                     double yTopLimit = -widget.row * widget.pieceSize.height/2;
                     double yBotLimit = 2 * widget.puzzleSize.height -
                         (widget.row + 1) * widget.pieceSize.height/2;
                     if ((tY >= yTopLimit) && (tY <= yBotLimit)) {
-                      print ('Crossed the ylimit check');
                       widget.top += dragUpdateDetails.delta.dy;
                       widget.left += dragUpdateDetails.delta.dx;
                       double widgetLeft = widget.left - widget.xCenterOffset;

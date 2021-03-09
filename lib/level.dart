@@ -18,9 +18,9 @@ class Level
       case 12 : puzzleComplexity = '3x4'; break;
       case 13 : puzzleComplexity = '3x4'; break;
       case 14 : puzzleComplexity = '3x4'; break;
-      case 15 : puzzleComplexity = '4x5'; break;
-      case 16 : puzzleComplexity = '4x5'; break;
-      case 17 : puzzleComplexity = '4x5'; break;
+      case 15 : puzzleComplexity = '4x4'; break;
+      case 16 : puzzleComplexity = '4x4'; break;
+      case 17 : puzzleComplexity = '4x4'; break;
       case 18 : puzzleComplexity = '5x4'; break;
       case 19 : puzzleComplexity = '5x4'; break;
       case 20 : puzzleComplexity = '5x5'; break;

@@ -20,10 +20,11 @@ import 'level.dart';
 import 'dart:core';
 import 'choreographer.dart';
 import 'package:flutter_is_emulator/flutter_is_emulator.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Storage.getStorage();
+  await Storage.getStorage();
   runApp(MindfullnessAlertExcerciserApp());
 }
 
@@ -72,6 +73,7 @@ class MyHomePage extends StatefulWidget {
 
 
   MyHomePage ({ this.title, this.levelNumber}){
+    print ('Level number is $levelNumber');
     print("Initializtion has taken place");
   }
 
@@ -121,22 +123,15 @@ class _MyHomePageState extends State<MyHomePage> {
   int soundRate = 0;
   LightCorridor lightCorridor;
   VibSoundCorridor vibSoundCorridor;
-  List<Piece> pieces = List<Piece>();
-  List<Light> lightPieces = List<Light>();
-  List<VibSoundButton> vibSoundButtons = List<VibSoundButton>();
+  List<Piece> pieces = [];
+  List<Light> lightPieces = [];
+  List<VibSoundButton> vibSoundButtons = [];
   Size lightCorridorSize;
   Size vibSoundCorridorSize;
   Choreographer choreography;
   List<Piece> lowerPieces;
   bool needToReshuffle = true;
 
-  void playHandler() async {
-    if (isPlaying) {
-      audioPlayer.stop();
-    } else {
-      audioPlayer = await audioCache.play('sound/win.mp3');
-    }
-  }
 
     void setPuzzleCompletion(int completedPieces, int totalPieces) {
       setState(() {
@@ -178,18 +173,6 @@ class _MyHomePageState extends State<MyHomePage> {
     //   }
     // });
 
-  void pauseHandler() {
-    if (isPaused && isPlaying) {
-      audioPlayer.resume();
-    } else {
-      audioPlayer.pause();
-    }
-
-    setState(() {
-      isPaused = !isPaused;
-    });
-  }
-
   Future<void> layoutIsInProgress() {
     return layoutCompleted.future;
   }
@@ -227,10 +210,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       safeFunction();
       pieces = pieces;
-      if (pieces.isNotEmpty) {
-        print(
-            "Key of the top of the stack ${pieces.last.key.toString()}");
-      }
     });
   }
 
@@ -411,7 +390,7 @@ class _MyHomePageState extends State<MyHomePage> {
     double xCenterOffset = (xScale > yScale) ? 0.0 : (puzzleSize.width - imageSize.width/yScale)/2;
     Size pieceSize = Size(puzzleSize.height*imageSize.width/ (imageSize.height*cols), puzzleSize.height / rows);
     Piece piece1, piece2;
-    List<Piece> tempList2 = List<Piece>();
+    List<Piece> tempList2 = [];
     int index;
 
     for (int y = 0; y < rows; y++) {
@@ -524,8 +503,8 @@ class _MyHomePageState extends State<MyHomePage> {
     //     Audio(
     //         "assets/sound/win.mp3")
     // );
+
     super.initState();
-    print('initState');
   }
 
   void showMessageDialog(BuildContext context, String text) {
@@ -591,8 +570,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
     return WillPopScope (
       onWillPop: ()  {
-        if (choreography.isReady())
+        if (choreography.isReady()) {
+          setState(() {
+          });
           return Future.value(true);
+        }
         else
           return Future.value(false);
       },
@@ -685,10 +667,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Column(
                         children: [
                           Spacer(flex: 1),
-                          Text('Last Result: $lastResult', style: TextStyle(color: Colors.white)),
+                          Text('Last Result: ${(choreography != null) ? choreography.getResultString(): 'No test run'}', style: TextStyle(color: Colors.white)),
                           Spacer(flex: 1),
                           FloatingActionButton.extended(onPressed: () async {
                             bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
+                            print ("The simulator is active $simulator");
                             if (await Vibration.hasVibrator() || simulator) {
                               if (choreography.isReady()) {
                                 choreography.setStatusToProgress();
@@ -739,7 +722,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 borderRadius: BorderRadius.circular(18.0),
                                 side: BorderSide(color: Colors.black)
                               ),
-                              title: Text('Please enable vibration in settings'),
+                              title: Text('Needs vibration capability'),
                               //content: Container(color: Colors.blue, child: Text("")),
                               actions: [
                                 okButton,
@@ -770,11 +753,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
 showAlertDialog (BuildContext context) {
   // set up the buttons
-  Widget cancelButton = FlatButton(
+  Widget cancelButton = TextButton(
     child: Text("Yes"),
     onPressed:  () {},
   );
-  Widget continueButton = FlatButton(
+  Widget continueButton = TextButton(
     child: Text("No"),
     onPressed:  () {},
   );
@@ -790,8 +773,8 @@ showAlertDialog (BuildContext context) {
   // show the dialog
 }
 
-
 class MindfullnessAlertExcerciserApp extends StatefulWidget {
+
   MindfullnessAlertExcerciserApp();
 
   @override
@@ -799,13 +782,14 @@ class MindfullnessAlertExcerciserApp extends StatefulWidget {
 }
 
 class _MindfullnessAlertExcerciserAppState extends State<MindfullnessAlertExcerciserApp> {
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp (
       home: StartApp(),
       routes: <String, WidgetBuilder> {
         '/InstructionsScreen' : (context) => Instructions(),
-        '/AlertGameScreen' : (context) => MyHomePage(title: "Mindfulness Alertness Exerciser"),
+        '/AlertGameScreen' : (context) => MyHomePage(title: "Alertness Exerciser"),
         '/Scores': (context) => Scores()
     }
     );
@@ -819,14 +803,106 @@ class LevelData {
   LevelData ({this.levelNumber, this.puzzleComplexity, this.eventComplexity});
 }
 
-class StartApp extends StatelessWidget {
+class LevelHistory {
+  static const int maxLevel = 21;
+  static const String incomplete = 'Time';
+  static const String complete = 'Done';
+  static const String notStarted = '';
+  static const String levelHistoryKey = 'LevelHistory';
+  static List<String> levelHistory;
+  static void loadLevelHistory () async {
+    if (levelHistory == null) {
+      await Storage.getStorage();
+      levelHistory = Storage.storage.getStringList(levelHistoryKey);
+      if (levelHistory == null) {
+        levelHistory = [];
+        for (int i = 0; i < maxLevel; i++) {
+          levelHistory.add(notStarted);
+        }
+        Storage.storage.setStringList(levelHistoryKey, levelHistory);
+      }
+    }
+  }
+
+  static void clearLevelHistory()
+  {
+    levelHistory = [];
+    for (int i = 0; i < maxLevel; i++) {
+      levelHistory.add(notStarted);
+    }
+    Storage.storage.setStringList(levelHistoryKey, levelHistory);
+  }
+
+  static void updateLevelHistory(int levelNumber, String status) {
+    print ('update request $levelNumber $status' );
+    loadLevelHistory();
+    levelHistory[levelNumber-1] = status;
+    Storage.storage.setStringList(levelHistoryKey, levelHistory);
+    int indexer = 1;
+    levelHistory.forEach((element) {
+      print ('Level history $indexer is $element');
+      indexer++;
+    });
+  }
+}
+
+// setState(() {
+// LevelHistory.clearLevelHistory();
+// Navigator.of(context, rootNavigator: true).pop();
+// });
+
+class CommonDialogs {
+  static void yesNoDialog (BuildContext context, String question, Function action) {
+    showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+              title: Column(),
+              content: Text(
+                  question),
+              actions: <Widget>[
+                TextButton(
+                  child: Text("Yes"),
+                  onPressed: () {
+                    action();
+                  },
+                ),
+                TextButton(
+                  child: Text("No"),
+                  onPressed: () {
+                    Navigator.of(context,
+                        rootNavigator: true).pop();
+                  },
+                )
+              ]
+          );
+        }
+    );
+  }
+
+
+}
+class StartApp extends StatefulWidget {
   StartApp () {
 
   }
+
+  @override
+  _StartAppState createState() => _StartAppState();
+}
+class _StartAppState extends State<StartApp> {
+
+  @override
+  void initState() {
+    LevelHistory.loadLevelHistory();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold ( backgroundColor: Color(0xFF01579B) ,
-      appBar: AppBar(title: Text("Mindfulness Alertness Exerciser"),),
+      appBar: AppBar(title: Text("Alertness Exerciser"),),
       body: Column(
         children: [
           Expanded(
@@ -862,6 +938,8 @@ class StartApp extends StatelessWidget {
                   ),
                   itemBuilder: (BuildContext context, int index) {
                     return FloatingActionButton.extended(
+                      backgroundColor: (LevelHistory.levelHistory[index] == LevelHistory.complete) ? Colors.green :
+                      (LevelHistory.levelHistory[index] == LevelHistory.notStarted) ? Colors.blue : Colors.yellowAccent,
                       elevation: 10,
                       onPressed: () async {
                         bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
@@ -869,8 +947,8 @@ class StartApp extends StatelessWidget {
                           Navigator.push(context,
                               MaterialPageRoute(builder: (context) =>
                                   MyHomePage(
-                                      title: "Mindfulness Alertness Exerciser",
-                                      levelNumber: (index + 1))));
+                                      title: "Exerciser",
+                                      levelNumber: (index + 1)))).then((value) => setState(() {}));
                         }
                         else {
                           Widget okButton = TextButton(
@@ -886,7 +964,7 @@ class StartApp extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(18.0),
                                 side: BorderSide(color: Colors.black)
                             ),
-                            title: Text('Please enable vibration in settings'),
+                            title: Text('Needs vibration capability'),
                             //content: Container(color: Colors.blue, child: Text("")),
                             actions: [
                               okButton,
@@ -906,18 +984,20 @@ class StartApp extends StatelessWidget {
                       ),
                       label: Container(
                         alignment: Alignment.center,
+                        color: Colors.transparent,
                         child: Center(
                           child: Column( crossAxisAlignment: CrossAxisAlignment.center , mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('Level - ${index + 1}',  style: TextStyle( decoration: TextDecoration.underline, fontWeight: FontWeight.bold),),
-                              Text('Size - ${Level.getPuzzleComplexity(index + 1)}'),
-                              Text('Events - ${Level.getEventComplexity(index + 1)}'),
+                              FittedBox(fit: BoxFit.cover, child: Text('Level-${index + 1}',  style: TextStyle( color: Colors.black, decoration: TextDecoration.underline, fontWeight: FontWeight.bold),)),
+                              FittedBox(fit: BoxFit.cover, child: Text('Size-${Level.getPuzzleComplexity(index + 1)}', style: TextStyle( color: Colors.black))),
+                              FittedBox(fit: BoxFit.cover, child: Text('Events-${Level.getEventComplexity(index + 1)}' , style: TextStyle( color: Colors.black))),
+                              FittedBox(fit: BoxFit.cover, child: AutoSizeText('${LevelHistory.levelHistory[index]}', style: TextStyle( color: Colors.black, fontSize: 10)))
                             ],
                           ),
                         ),
-                        decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(15)),
+                        //decoration: BoxDecoration(
+                            //color: Colors.blue,
+                            //borderRadius: BorderRadius.circular(15)),
                       ),
                     );
                     // Text("${(levelData[index].levelNumber)} this is a long text test");
@@ -945,9 +1025,14 @@ class StartApp extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: FloatingActionButton.extended(
-                        label: Text("Scores", style: TextStyle(fontSize: 20)),
+                        label: Column(
+                          children: [
+                            Text("Scores"),
+                            Text("History"),
+                          ],
+                        ),
                         backgroundColor: Colors.blue,
-                        heroTag: 'contact',
+                        heroTag: 'contact12345',
                         onPressed: () {
                           Navigator.pushNamed(context, '/Scores');
                         }
@@ -956,11 +1041,39 @@ class StartApp extends StatelessWidget {
                   Expanded(
                     flex: 2,
                     child: FloatingActionButton.extended(
-                        label: Text("Help", style: TextStyle(fontSize: 20)),
+                        label: Column(
+                          children: [
+                            Text("Play"),
+                            Text("Details"),
+                          ],
+                        ),
                         backgroundColor: Colors.blue,
                         heroTag: 'contact2',
                         onPressed: () {
                           Navigator.pushNamed(context, '/InstructionsScreen');
+                        }
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: FloatingActionButton.extended(
+                        label:  Column(
+                          children: [
+                            Text("Reset"),
+                            Text("Levels"),
+                          ],
+                        ),
+                        backgroundColor: Colors.blue,
+                        heroTag: 'contact22',
+                        onPressed: () {
+                          setState(() {
+                            CommonDialogs.yesNoDialog(context,
+                                "Do you really want to clear  the level history?",
+                                    () {setState(() { LevelHistory.clearLevelHistory();
+                                    Navigator.of(context, rootNavigator: true).pop();
+                                  });
+                                });
+                          });
                         }
                     ),
                   ),
@@ -1011,20 +1124,23 @@ class Scores extends StatefulWidget {
   static List<String> getList() {
     List<String> items =  Storage.getList(storageKey);
     if (items == null) {
-      return [''];
+      return [];
     }
     return items;
   }
 
-  static void addString (String entry) async {
-      print('item added: $entry');
+  static void clearScores() {
+    Storage.storage.setStringList(storageKey, []);
+  }
+
+  static void addString (String item) async {
+    print ('addString request for $item');
       List<String> items = await getList();
+      items.add(item);
       if (size == items.length) {
         items.removeLast();
       }
-      items.add(entry);
-      SharedPreferences curStorage = await Storage.getStorage();
-      curStorage.setStringList(storageKey, items);
+      Storage.storage.setStringList(storageKey, items);
   }
 
   @override
@@ -1038,26 +1154,48 @@ class _ScoresState extends State<Scores> {
     return Scaffold(
         appBar: AppBar(title: Text("Scores", style: TextStyle(color:Colors.indigo)),),
         body: Column (
-
     children: [
      Expanded(
        flex: 20,
-       child: Container(
-         decoration: BoxDecoration (
-             color: Colors.white,
-             border: Border.all(
-               color: Colors.black,
-               width: 4,
-             )
-         ),         child: ListView.builder(
-         itemCount: Scores.getList().length,
-         itemBuilder: (context, index) {
-           return Card(color: Colors.purple,
-               borderOnForeground: true,
-               child: ListTile(subtitle: Text('Test'),title: Text("${Scores.getList()[index]}", style: TextStyle(color:Colors.white, fontSize: 20))));
-         }),
+       child: SafeArea(
+         child: Container(
+           decoration: BoxDecoration (
+               color: Colors.white,
+               border: Border.all(
+                 color: Colors.black,
+                 width: 4,
+               )
+           ),         child: ListView.builder(
+           itemCount: (Scores.getList().length),
+           itemBuilder: (context, index) {
+             return Card(color: Colors.lightBlue,
+                 borderOnForeground: true,
+                 child: ListTile(isThreeLine: true,
+                     subtitle: Text("${Scores.getList()[index].split('?')[0]}"),
+                     title: Text("${Scores.getList()[index].split('?')[1]}",
+                         style: TextStyle(color:Colors.white))));
+           }),
+         ),
        ),
-     )]
+     ),
+      Expanded(flex: 1, child: Visibility(
+        visible: ((Scores.getList().length > 0) ?  true: false),
+        child: FloatingActionButton.extended(
+            heroTag: 'thecontact33',
+            onPressed: () {
+                setState(() {
+                  CommonDialogs.yesNoDialog(context,
+                      "Do you really want to clear  the scores?",
+                          () {setState(() { Scores.clearScores();
+                      Navigator.of(context, rootNavigator: true).pop();
+                      });
+                    });
+              });
+            }, label: Text('Clear Scores')),
+
+      )),
+      Spacer(flex: 1)
+    ]
      ));
   }
 }

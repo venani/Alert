@@ -36,6 +36,9 @@ dependencies:
   provider: ^3.0.0+1
   get: ^3.25.6
   flutter_is_emulator: ^1.0.0
+  date_format: ^1.0.9
+  intl: ^0.17.0
+  auto_size_text: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -93,3 +96,4 @@ flutter:
     - packages/mindfulAlert/assets/sound/mind.mp3
     - assets/sound/win.mp3
     - assets/sound/mind.mp3
+    - assets/sound/win1.mp3
