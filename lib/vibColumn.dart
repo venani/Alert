@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:audioplayers/audio_cache.dart';
 import 'package:vibration/vibration.dart';
+import 'package:assets_audio_player/assets_audio_player.dart';
 
 
 enum VibSoundType
@@ -17,8 +18,11 @@ class VibSoundCorridor
   final int numberOfVibSoundButtons;
   final Function updateState;
   Function clickCallback;
-  AudioPlayer audioPlayer = null;
-  AudioCache audioCache = AudioCache();
+  bool audioStatus = false;
+  //AudioPlayer audioPlayer = AudioPlayer(mode: PlayerMode.LOW_LATENCY);
+  //AudioCache audioCache = AudioCache();
+  AssetsAudioPlayer assetsAudioPlayer = AssetsAudioPlayer.newPlayer();
+
   VibSoundCorridor(this.vibCorridorSize, this.numberOfVibSoundButtons, this.updateState) {
   }
 
@@ -27,6 +31,7 @@ class VibSoundCorridor
   }
 
   List<VibSoundButton> getList() {
+
     List<VibSoundButton> vibSoundButtonList = List<VibSoundButton>();
     for (int index=0; index < numberOfVibSoundButtons ; index++) {
       if (index % 2 == 0) {
@@ -54,27 +59,58 @@ class VibSoundCorridor
     Vibration.cancel();
   }
 
-  void turnSoundsOn() async {
+  Future<void> turnSoundsOn() async {
+      await assetsAudioPlayer.play();
+
+    //int status = 0;
+
     print ('turnSoundsOn');
-    print('turnSoundsOn status is ${(audioPlayer == null)}');
-    if (audioPlayer == null) {
-      audioPlayer = await audioCache.play('sound/win1.mp3');
-      print ('play');
-    }
-    else {
-      audioPlayer.resume();
-      print ('resume');
-    }
+    // print('turnSoundsOn status is ${(audioPlayer == null)} ${DateTime.now().toString()}');
+    // if (audioPlayer == null) {
+    //   audioPlayer = await audioCache.play('sound/win1.mp3');
+    //   print ('play');
+    // }
+    // else {
+    //    status = await audioPlayer.resume();
+    //   print ('resume $status  ${DateTime.now().toString()}');
+    // }
+    //status = await audioPlayer.resume();
+    //return status;
+
   }
 
-  void turnSoundsOff() async {
-    print('turnSoundsOff status is ${(audioPlayer == null)}');
-    if (audioPlayer != null) {
-      audioPlayer.pause();
-      print ('pause');
-    }
+  Future<void> turnSoundsOff() async {
+    //int status = 0;
+    // print('turnSoundsOff status is ${(audioPlayer == null)}');
+    // if (audioPlayer != null) {
+    //   int status = await audioPlayer.pause();
+    //   print ('pause $status ');
+    // }
+    // else
+    // {
+    //   print ('there is a problem');
+    // }
+    //status = await audioPlayer.pause();
+    await assetsAudioPlayer.pause();
+  }
+
+  Future<int> releaseSound() async {
+    int status = 0;
+    //status = await audioPlayer.release ();
+  }
+
+  Future<int> setupSound() async {
+    // //await audioPlayer.setUrl('sound/mind.mp3', isLocal: true);
+    // print('About to start play');
+    // audioPlayer = await audioCache.play('sound/mind.mp3', volume: 0.1);
+    // print('About to turn sound off');
+    // int status = await audioPlayer.pause();
+    // audioPlayer.setVolume(1.0);
+    // print('It should be off by now');
+    await assetsAudioPlayer.open(Audio("assets/sound/mind.mp3"), autoStart: false);
   }
 }
+
 
 class VibSoundButton extends StatefulWidget {
   final Function updateState;

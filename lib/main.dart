@@ -524,6 +524,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void dispose () {
+    vibSoundCorridor.releaseSound();
     super.dispose();
     print ("dispose is called");
   }

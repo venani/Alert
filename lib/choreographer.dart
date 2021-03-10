@@ -60,6 +60,7 @@ class Choreographer
   Choreographer ({this.lightCorridor, this.vibSoundCorridor, this.homePage}) {
     lightCorridor.setCallback(LightCallback);
     vibSoundCorridor.setClickCallBack(VibSoundCallback);
+    vibSoundCorridor.setupSound();
     level = homePage.levelNumber;
     numLights = numVibrations = numSounds = Level.getEventComplexity(homePage.levelNumber);
     if (homePage.state == null) {
@@ -105,7 +106,7 @@ class Choreographer
     await justWait();
     print('stop wait for threads');
 
-    homePage.state.setState(()  {
+    homePage.state.setState(()  async {
       homePage.state.gameStatus = "Please wait";
       curStatus = ChoreographerStatus.Ready;
 
@@ -118,7 +119,7 @@ class Choreographer
         });
         movePuzzlePiecesBack();
       }
-      vibSoundCorridor.turnSoundsOff();
+      await vibSoundCorridor.turnSoundsOff();
       vibSoundCorridor.turnVibrationsOff();
       lightCorridor.clearAllLights();
     });
@@ -146,7 +147,7 @@ class Choreographer
       return false;
   }
 
-  void VibSoundCallback (bool vib) {
+  void VibSoundCallback (bool vib) async {
     if (vib) {
       if ((beginVibKey == 1) || (continueVibWindow)) {
           curVibrationKeys++;
@@ -164,7 +165,7 @@ class Choreographer
           curSoundKeys++;
           continueSoundWindow = false;
           if (beginSoundKey == 1) {
-            vibSoundCorridor.turnSoundsOff();
+            await vibSoundCorridor.turnSoundsOff();
           }
           beginSoundKey = 0;
         }
@@ -429,7 +430,7 @@ class Choreographer
 
     //Start timer
     timer1InProgress = false;
-    timer1 = Timer.periodic(Duration(milliseconds: 1000), (timer) {
+    timer1 = Timer.periodic(Duration(milliseconds: 1000), (timer) async {
       timer1InProgress = true;
       if (gameTime > 0) {
         gameTime -= 1;
@@ -509,7 +510,7 @@ class Choreographer
           print ('Start sound $temp');
           beginSoundKey = 1;
           totalSoundKeys++;
-          vibSoundCorridor.turnSoundsOn();
+          await vibSoundCorridor.turnSoundsOn();
           homePage.state.setSoundCount(curSoundKeys, totalSoundKeys);
           print ('Turning sound on at $index}');
         }
@@ -522,7 +523,7 @@ class Choreographer
           print ('Stop sound $temp');
           if (beginSoundKey == 1) {
             continueSoundWindow = true;
-            vibSoundCorridor.turnSoundsOff();
+            await vibSoundCorridor.turnSoundsOff();
           }
           beginSoundKey = 0;
           print ('Turning sound off at $index}');
