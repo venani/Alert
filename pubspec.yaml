@@ -39,6 +39,8 @@ dependencies:
   intl: ^0.17.0
   auto_size_text: ^2.1.0
   assets_audio_player: ^2.0.14
+  introduction_screen: ^2.0.0
+  lottie: ^0.6.0
 
 dev_dependencies:
   flutter_test:
@@ -86,13 +88,19 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
   assets:
-    - assets/images/files/background.png
-    - assets/images/files/progressBar.png
-    - assets/images/files/progressBarInc.png
-    - packages/mindfulAlert/assets/images/files/cat.jpg
-    - packages/mindfulAlert/assets/images/files/bird.png
-    - packages/mindfulAlert/assets/images/files/cat.png
-    - packages/mindfulAlert/assets/images/files/progressBar.png
+    - assets/images/files/TestSelectionScreen.png
+    - assets/images/files/TestExerciserScreen.png
+    - packages/mindfulAlert/assets/images/files/roses.jpg
+    - packages/mindfulAlert/assets/images/files/halfpeacock.jpg
+    - packages/mindfulAlert/assets/images/files/lightStore.jpg
+    - packages/mindfulAlert/assets/images/files/balls.jpg
+    - packages/mindfulAlert/assets/images/files/market.jpg
+    - packages/mindfulAlert/assets/images/files/palace.jpg
+    - packages/mindfulAlert/assets/images/files/skyScrapers.jpg
+    - packages/mindfulAlert/assets/images/files/cheetah.jpg
+    - packages/mindfulAlert/assets/images/files/rainbow.jpg
+    - packages/mindfulAlert/assets/images/files/palace.jpg
+    - packages/mindfulAlert/assets/images/files/peacock.jpg
     - packages/mindfulAlert/assets/sound/mind.mp3
     - assets/sound/win.mp3
     - assets/sound/mind.mp3

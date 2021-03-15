@@ -13,18 +13,26 @@ import 'lights.dart';
 import 'package:vibration/vibration.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:audioplayers/audio_cache.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'vibColumn.dart';
 import 'dart:math';
 import 'level.dart';
 import 'dart:core';
 import 'choreographer.dart';
 import 'package:flutter_is_emulator/flutter_is_emulator.dart';
-import 'package:auto_size_text/auto_size_text.dart';
+import 'startapp.dart';
+import 'storage.dart';
+import 'levelhistory.dart';
+import 'introductoryScreen.dart';
+import 'puzzleFile.dart';
+import 'Scores.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Storage.getStorage();
+  await LevelHistory.loadLevelHistory();
+  await PuzzleFiles.getLastSelection();
+  PuzzleFiles.puzzleFiles.shuffle(Random(DateTime.now().second)) ;
   runApp(MindfullnessAlertExcerciserApp());
 }
 
@@ -77,19 +85,19 @@ class MyHomePage extends StatefulWidget {
     print("Initializtion has taken place");
   }
 
-  void dispose () {
-  }
-
-  @override
   _MyHomePageState createState() {
     state = _MyHomePageState();
     return state;
+  }
+
+  void dispose () {
   }
 }
 
 class _MyHomePageState extends State<MyHomePage> {
   File _image;
   Image backgroundImage;
+  Image puzzleImage;
   GlobalKey puzzleKey = GlobalKey();
   GlobalKey vibSoundCorridorKey = GlobalKey();
   GlobalKey lightCorridorKey = GlobalKey();
@@ -99,6 +107,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Completer timerBarCompleted = Completer();
   Completer<ui.Size> lightCorridorSizeCompleted = Completer<ui.Size>();
   Completer<ui.Size> vibSoundCorridorSizeCompleted = Completer<ui.Size>();
+  Color timeRemainingColor = Colors.transparent;
+  bool timeRemainingStatus = false;
   ui.Size imageSize;
   Uint8List byteList;
   AudioCache audioCache = AudioCache();
@@ -140,8 +150,19 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     }
 
+    void clearTimeRemainingStatus() {
+      timeRemainingStatus = false;
+    }
+
     void setTimeRemaining (int numSeconds) {
       setState(() {
+        if (timeRemainingStatus) {
+          timeRemainingColor = Colors.red;
+          timeRemainingStatus = false;
+        } else {
+          timeRemainingColor = Colors.transparent;
+          timeRemainingStatus = true;
+        }
         timeRemaining = numSeconds.toString();
       });
     }
@@ -376,8 +397,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
     choreography = Choreographer(lightCorridor: lightCorridor, vibSoundCorridor: vibSoundCorridor, homePage: widget);
 
+    String fileName = await PuzzleFiles.getRandomPuzzleFile();
+    String backgroundFile = "/assets/images/files/" +  fileName +  ".jpg";
     backgroundImage =
-        await createImageFromFile("/assets/images/files/cat.png", puzzleSize);
+        await createImageFromFile(backgroundFile, puzzleSize);
+
     double height = (puzzleSize.height.toInt()) /
         2; //Transform widget = Transform.scale(scale: 2.0, child: Image.memory(byteList));
 
@@ -505,7 +529,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // );
 
     super.initState();
-  }
+    }
 
   void showMessageDialog(BuildContext context, String text) {
     showDialog(
@@ -513,10 +537,8 @@ class _MyHomePageState extends State<MyHomePage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(8.0))
-          ),
-          backgroundColor: Colors.black87,
+          shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(18.0), side: BorderSide(color: Colors.black)),
+          backgroundColor: Colors.white,
           content: Text ('Please wait'),
         );
       },
@@ -529,6 +551,21 @@ class _MyHomePageState extends State<MyHomePage> {
     print ("dispose is called");
   }
 
+  void displayOverlay (BuildContext context) async {
+      OverlayState overlayState = Overlay.of(context);
+      OverlayEntry overlayEntry = OverlayEntry(
+        builder: (context) => Positioned(
+          top: 24.0,
+          right: 10.0,
+          child: CircleAvatar(
+            radius: 10.0, backgroundColor: Colors.red,
+            child: Text("1"),
+          )
+        ));
+      overlayState.insert(overlayEntry);
+      await Future.delayed(Duration(seconds: 2));
+      overlayEntry.remove();
+  }
   // void shuffleLowerPieces ()
   // {
   //   setState(() {
@@ -630,7 +667,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                    children: [
-                                     Text("  Level", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
+                                     Text("Level", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
                                      Text("  ${widget.levelNumber}", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                    ],
                                  ),
@@ -652,8 +689,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
-                                        Text("Secs", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
-                                        Text("$timeRemaining", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                        Text("Secs", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
+                                        Text("$timeRemaining", style: TextStyle(backgroundColor: timeRemainingColor, color: Colors.white, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                   ),
@@ -677,18 +714,23 @@ class _MyHomePageState extends State<MyHomePage> {
                               if (choreography.isReady()) {
                                 choreography.setStatusToProgress();
                               } else if (choreography.isProgressing()) {
+                                choreography.timelinePaused = true;
                                 showDialog(
                                     context: context,
                                     barrierDismissible: false,
                                     builder: (BuildContext context) {
                                       return AlertDialog(
                                           title: Column(),
+                                          backgroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(18.0), side: BorderSide(color: Colors.black)),
                                           content: Text(
                                               "Do you really want to cancel?"),
                                           actions: <Widget>[
                                             TextButton(
                                               child: Text("Yes"),
                                               onPressed: () {
+                                                choreography.updateScores();
+                                                choreography.timelinePaused = false;
                                                 choreography.setStatusToReady(
                                                     false);
                                                 Navigator.of(context,
@@ -700,6 +742,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                             TextButton(
                                               child: Text("No"),
                                               onPressed: () {
+                                                choreography.timelinePaused = false;
                                                 Navigator.of(context,
                                                     rootNavigator: true).pop();
                                               },
@@ -718,11 +761,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                 }
                               );
                               AlertDialog alert = AlertDialog(
-                                backgroundColor: Colors.lightBlueAccent,
-                                shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18.0),
-                                side: BorderSide(color: Colors.black)
-                              ),
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(18.0), side: BorderSide(color: Colors.black)),
                               title: Text('Needs vibration capability'),
                               //content: Container(color: Colors.blue, child: Text("")),
                               actions: [
@@ -765,6 +805,8 @@ showAlertDialog (BuildContext context) {
   // set up the AlertDialog
   AlertDialog alert = AlertDialog(
     title: Text("AlertDialog"),
+    backgroundColor: Colors.white,
+    shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(18.0), side: BorderSide(color: Colors.black)),
     content: Text("Do you really want to cancel?"),
     actions: [
       cancelButton,
@@ -787,9 +829,10 @@ class _MindfullnessAlertExcerciserAppState extends State<MindfullnessAlertExcerc
   @override
   Widget build(BuildContext context) {
     return MaterialApp (
+      debugShowCheckedModeBanner: false,
       home: StartApp(),
       routes: <String, WidgetBuilder> {
-        '/InstructionsScreen' : (context) => Instructions(),
+        '/InstructionsScreen' : (context) => IntroductoryScreen(),
         '/AlertGameScreen' : (context) => MyHomePage(title: "Alertness Exerciser"),
         '/Scores': (context) => Scores()
     }
@@ -804,289 +847,6 @@ class LevelData {
   LevelData ({this.levelNumber, this.puzzleComplexity, this.eventComplexity});
 }
 
-class LevelHistory {
-  static const int maxLevel = 21;
-  static const String incomplete = 'Time';
-  static const String complete = 'Done';
-  static const String notStarted = '';
-  static const String levelHistoryKey = 'LevelHistory';
-  static List<String> levelHistory;
-  static void loadLevelHistory () async {
-    if (levelHistory == null) {
-      await Storage.getStorage();
-      levelHistory = Storage.storage.getStringList(levelHistoryKey);
-      if (levelHistory == null) {
-        levelHistory = [];
-        for (int i = 0; i < maxLevel; i++) {
-          levelHistory.add(notStarted);
-        }
-        Storage.storage.setStringList(levelHistoryKey, levelHistory);
-      }
-    }
-  }
-
-  static void clearLevelHistory()
-  {
-    levelHistory = [];
-    for (int i = 0; i < maxLevel; i++) {
-      levelHistory.add(notStarted);
-    }
-    Storage.storage.setStringList(levelHistoryKey, levelHistory);
-  }
-
-  static void updateLevelHistory(int levelNumber, String status) {
-    print ('update request $levelNumber $status' );
-    loadLevelHistory();
-    levelHistory[levelNumber-1] = status;
-    Storage.storage.setStringList(levelHistoryKey, levelHistory);
-    int indexer = 1;
-    levelHistory.forEach((element) {
-      print ('Level history $indexer is $element');
-      indexer++;
-    });
-  }
-}
-
-// setState(() {
-// LevelHistory.clearLevelHistory();
-// Navigator.of(context, rootNavigator: true).pop();
-// });
-
-class CommonDialogs {
-  static void yesNoDialog (BuildContext context, String question, Function action) {
-    showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-              title: Column(),
-              content: Text(
-                  question),
-              actions: <Widget>[
-                TextButton(
-                  child: Text("Yes"),
-                  onPressed: () {
-                    action();
-                  },
-                ),
-                TextButton(
-                  child: Text("No"),
-                  onPressed: () {
-                    Navigator.of(context,
-                        rootNavigator: true).pop();
-                  },
-                )
-              ]
-          );
-        }
-    );
-  }
-
-
-}
-class StartApp extends StatefulWidget {
-  StartApp () {
-
-  }
-
-  @override
-  _StartAppState createState() => _StartAppState();
-}
-class _StartAppState extends State<StartApp> {
-
-  @override
-  void initState() {
-    LevelHistory.loadLevelHistory();
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold ( backgroundColor: Color(0xFF01579B) ,
-      appBar: AppBar(title: Text("Alertness Exerciser"),),
-      body: Column(
-        children: [
-          Expanded(
-            flex: 1,
-            child: Center(
-              child: Text ('Please select a level', style: TextStyle( color: Colors.white, fontSize: 20),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 8,
-            child: Container(
-              padding: EdgeInsets.all(10) ,
-              decoration: BoxDecoration (
-                color: Colors.white,
-                border: Border.all(
-                  color: Colors.black,
-                  width: 5,
-                  style: BorderStyle.solid
-                )
-              ),
-              child: Scrollbar(
-                isAlwaysShown: true,
-                thickness: 5,
-                child: GridView.builder(
-                  itemCount: 21,
-                  padding: EdgeInsets.fromLTRB(10, 10, 10, 10),
-                  scrollDirection: Axis.vertical,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 10.0,
-                    mainAxisSpacing: 10.0,
-                  ),
-                  itemBuilder: (BuildContext context, int index) {
-                    return FloatingActionButton.extended(
-                      backgroundColor: (LevelHistory.levelHistory[index] == LevelHistory.complete) ? Colors.green :
-                      (LevelHistory.levelHistory[index] == LevelHistory.notStarted) ? Colors.blue : Colors.yellowAccent,
-                      elevation: 10,
-                      onPressed: () async {
-                        bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
-                        if (await Vibration.hasVibrator() || simulator) {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) =>
-                                  MyHomePage(
-                                      title: "Exerciser",
-                                      levelNumber: (index + 1)))).then((value) => setState(() {}));
-                        }
-                        else {
-                          Widget okButton = TextButton(
-                            child: Text("Ok", style: TextStyle(color:Colors.white)),
-                            style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
-                            onPressed: () {
-                              Navigator.of(context, rootNavigator: true).pop();
-                            },
-                          );
-                          AlertDialog alert = AlertDialog(
-                            backgroundColor: Colors.lightBlueAccent,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18.0),
-                                side: BorderSide(color: Colors.black)
-                            ),
-                            title: Text('Needs vibration capability'),
-                            //content: Container(color: Colors.blue, child: Text("")),
-                            actions: [
-                              okButton,
-                            ],
-                          );
-                          await showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (BuildContext context) {
-                                return alert;
-                              });
-                        }
-                      },
-                      heroTag: 'thecontact$index',
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      label: Container(
-                        alignment: Alignment.center,
-                        color: Colors.transparent,
-                        child: Center(
-                          child: Column( crossAxisAlignment: CrossAxisAlignment.center , mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              FittedBox(fit: BoxFit.cover, child: Text('Level-${index + 1}',  style: TextStyle( color: Colors.black, decoration: TextDecoration.underline, fontWeight: FontWeight.bold),)),
-                              FittedBox(fit: BoxFit.cover, child: Text('Size-${Level.getPuzzleComplexity(index + 1)}', style: TextStyle( color: Colors.black))),
-                              FittedBox(fit: BoxFit.cover, child: Text('Events-${Level.getEventComplexity(index + 1)}' , style: TextStyle( color: Colors.black))),
-                              FittedBox(fit: BoxFit.cover, child: AutoSizeText('${LevelHistory.levelHistory[index]}', style: TextStyle( color: Colors.black, fontSize: 10)))
-                            ],
-                          ),
-                        ),
-                        //decoration: BoxDecoration(
-                            //color: Colors.blue,
-                            //borderRadius: BorderRadius.circular(15)),
-                      ),
-                    );
-                    // Text("${(levelData[index].levelNumber)} this is a long text test");
-                  },
-                ),
-              ),
-              // child: ListView.builder(
-              //   itemCount: levelData.length,
-              //   itemBuilder: (context, index){
-              //     return Card(
-              //       child: ListTile(
-              //         onTap: () { print("${(levelData[index].levelNumber)}"); },
-              //         title: Text("${(levelData[index].levelNumber)} this is a long text test")
-              //       )
-              //     );
-              //   },
-              // ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Center(
-              child: Row (
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: FloatingActionButton.extended(
-                        label: Column(
-                          children: [
-                            Text("Scores"),
-                            Text("History"),
-                          ],
-                        ),
-                        backgroundColor: Colors.blue,
-                        heroTag: 'contact12345',
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/Scores');
-                        }
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: FloatingActionButton.extended(
-                        label: Column(
-                          children: [
-                            Text("Play"),
-                            Text("Details"),
-                          ],
-                        ),
-                        backgroundColor: Colors.blue,
-                        heroTag: 'contact2',
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/InstructionsScreen');
-                        }
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: FloatingActionButton.extended(
-                        label:  Column(
-                          children: [
-                            Text("Reset"),
-                            Text("Levels"),
-                          ],
-                        ),
-                        backgroundColor: Colors.blue,
-                        heroTag: 'contact22',
-                        onPressed: () {
-                          setState(() {
-                            CommonDialogs.yesNoDialog(context,
-                                "Do you really want to clear  the level history?",
-                                    () {setState(() { LevelHistory.clearLevelHistory();
-                                    Navigator.of(context, rootNavigator: true).pop();
-                                  });
-                                });
-                          });
-                        }
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      )
-    );
-  }
-}
 
 class Instructions extends StatelessWidget {
   @override
@@ -1097,114 +857,6 @@ class Instructions extends StatelessWidget {
   }
 }
 
-class Storage {
-  static SharedPreferences storage = null;
-  static List<String> items = [];
-
-  static Future<SharedPreferences> getStorage() async {
-    if (storage == null) {
-      storage = await SharedPreferences.getInstance();
-    }
-    return storage;
-  }
-
-  static List<String> getList(String key) {
-    items = storage.getStringList(key);
-    return items;
-  }
-}
-
-class Scores extends StatefulWidget {
-  static const int size = 20;
-  static const String storageKey = 'Scores';
-  static String getItem(int index)  {
-    List<String> items = getList();
-    return items[index];
-  }
-
-  static List<String> getList() {
-    List<String> items =  Storage.getList(storageKey);
-    if (items == null) {
-      return [];
-    }
-    return items;
-  }
-
-  static void clearScores() {
-    Storage.storage.setStringList(storageKey, []);
-  }
-
-  static void addString (String item) async {
-    print ('addString request for $item');
-      List<String> items = await getList();
-      items.add(item);
-      if (size == items.length) {
-        items.removeLast();
-      }
-      Storage.storage.setStringList(storageKey, items);
-  }
-
-  @override
-  _ScoresState createState() => _ScoresState();
-}
-
-class _ScoresState extends State<Scores> {
-
-  @override
-  Widget build(BuildContext context)  {
-    return Scaffold(
-        appBar: AppBar(title: Text("Scores", style: TextStyle(color:Colors.indigo)),),
-        body: Column (
-    children: [
-     Expanded(
-       flex: 20,
-       child: SafeArea(
-         child: Container(
-           decoration: BoxDecoration (
-               color: Colors.white,
-               border: Border.all(
-                 color: Colors.black,
-                 width: 4,
-               )
-           ),         child: ListView.builder(
-           itemCount: (Scores.getList().length),
-           itemBuilder: (context, index) {
-             return Card(color: Colors.lightBlue,
-                 borderOnForeground: true,
-                 child: ListTile(isThreeLine: true,
-                     subtitle: Text("${Scores.getList()[index].split('?')[0]}"),
-                     title: Text("${Scores.getList()[index].split('?')[1]}",
-                         style: TextStyle(color:Colors.white))));
-           }),
-         ),
-       ),
-     ),
-      Expanded(flex: 1, child: Visibility(
-        visible: ((Scores.getList().length > 0) ?  true: false),
-        child: FloatingActionButton.extended(
-            heroTag: 'thecontact33',
-            onPressed: () {
-                setState(() {
-                  CommonDialogs.yesNoDialog(context,
-                      "Do you really want to clear  the scores?",
-                          () {setState(() { Scores.clearScores();
-                      Navigator.of(context, rootNavigator: true).pop();
-                      });
-                    });
-              });
-            }, label: Text('Clear Scores')),
-
-      )),
-      Spacer(flex: 1)
-    ]
-     ));
-  }
-}
-
-class GameArguments {
-  final levelNumber;
-  GameArguments(this.levelNumber);
-}
 
 // Stack(
 //   children: [

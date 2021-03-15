@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:io';
+import 'package:date_format/date_format.dart';
+
 import 'lights.dart';
 import 'vibColumn.dart';
 import 'level.dart';
@@ -11,6 +13,8 @@ import 'package:get/get.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'levelhistory.dart';
+import 'Scores.dart';
 
 enum ChoreographerStatus {
   Ready,
@@ -23,6 +27,7 @@ class Choreographer
   final VibSoundCorridor vibSoundCorridor;
   final MyHomePage homePage;
   List<Piece> pieces;
+  bool timelinePaused = false;
 
   ChoreographerStatus curStatus = ChoreographerStatus.Ready;
   int numberOfMinutes = 2;
@@ -66,7 +71,9 @@ class Choreographer
     if (homePage.state == null) {
       homePage.state.gameStatus = readyText;
     }
-    print ('The level number is $level');
+
+    gameTime = Level.getTestTime(homePage.levelNumber);
+    homePage.state.setTimeRemaining(gameTime);
   }
 
   void dispose ()
@@ -103,14 +110,18 @@ class Choreographer
       timer2.cancel();
       timer2 = null;
     }
+
+    // Clear time remaining status
+    homePage.state.clearTimeRemainingStatus();
+    homePage.state.setTimeRemaining(gameTime);
+
+    //Wait for the timers to exit
     await justWait();
     print('stop wait for threads');
 
-    homePage.state.setState(()  async {
+    homePage.state.setState(()  {
       homePage.state.gameStatus = "Please wait";
       curStatus = ChoreographerStatus.Ready;
-
-      //Wait for the timers to exit
 
       homePage.state.gameStatus = (firstTime) ? "Start the test" : 'Retest';
       if ((pieces != null) && (pieces.length != 0)) {
@@ -119,10 +130,10 @@ class Choreographer
         });
         movePuzzlePiecesBack();
       }
-      await vibSoundCorridor.turnSoundsOff();
-      vibSoundCorridor.turnVibrationsOff();
-      lightCorridor.clearAllLights();
     });
+    await vibSoundCorridor.turnSoundsOff();
+    vibSoundCorridor.turnVibrationsOff();
+    lightCorridor.clearAllLights();
   }
 
   void setStatusToProgress() {
@@ -218,11 +229,8 @@ class Choreographer
     );
     // set up the AlertDialog
     AlertDialog alert = AlertDialog(
-      backgroundColor: Colors.lightBlueAccent,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18.0),
-          side: BorderSide(color: Colors.black)
-      ),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(18.0), side: BorderSide(color: Colors.black)),
       title: Container(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -235,7 +243,7 @@ class Choreographer
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    RawMaterialButton(child: Text('Puzzle:',style: TextStyle(color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))),
+                    RawMaterialButton(child: Text('Puzzle:',style: TextStyle(backgroundColor: Colors.black, color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))),
                     Text('$puzzleString', style: TextStyle(color: Colors.black),),
                   ],
                 ),
@@ -278,7 +286,7 @@ class Choreographer
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    RawMaterialButton(child: Text('Overall:',style: TextStyle(color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))),
+                    RawMaterialButton(child: Text('Overall:',style: TextStyle(backgroundColor: Colors.black, color: Colors.yellow, fontSize: 20, fontWeight: FontWeight.bold))),
                     Text('${getResultString()}', style: TextStyle(color: Colors.black),),
                   ],
                 ),
@@ -304,6 +312,10 @@ class Choreographer
   {
     timer2InProgress = false;
     timer2 = Timer.periodic(Duration(milliseconds: 1000), (timer) {
+      if (timelinePaused) {
+        return;
+      }
+
       timer2InProgress = true;
       if (isReady()) {
         timer.cancel();
@@ -336,8 +348,8 @@ class Choreographer
           homePage.state.setState(() {
             homePage.state.lastResult = getResultString();
             DateTime now = DateTime.now();
-            String formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(now);
-            Scores.addString("$formattedDate Level-$level ${getResultString()}? Puzzle-${getPuzzleString()} Lights-${getLightString()} Vibration-${getVibrationString()} Sound-${getSoundString()}");
+            String formattedDate = DateFormat('yyyy/MM/dd kk:mm').format(now);
+            Scores.addString("$formattedDate Test-$level ${getResultString()}? Puzzle-${getPuzzleString()} Lights-${getLightString()} Vibration-${getVibrationString()} Sound-${getSoundString()}");
             LevelHistory.updateLevelHistory(level, getResultString());
             display();
           });
@@ -401,24 +413,30 @@ class Choreographer
       } else if (events == 2) {
         result = LevelHistory.complete; //'Good';
       } else if (events == 1) {
-        result = 'More effort';
+        result = LevelHistory.incomplete;
       }
     } else {
-      result = 'Incomplete';
+      result = LevelHistory.moreEffort;
     }
 
     return result;
   }
 
+  void updateScores() {
+    DateTime now = DateTime.now();
+    String formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(now);
+    Scores.addString("$formattedDate Level-$level ${getResultString()}? Puzzle-${getPuzzleString()} Lights-${getLightString()} Vibration-${getVibrationString()} Sound-${getSoundString()}");
+  }
+
   void start() {
 
-    gameTime = numberOfMinutes * 60;
+    gameTime = Level.getTestTime(homePage.levelNumber);
     totalLightKeys = totalSoundKeys = totalVibrationKeys = 0;
     curLightKeys = curSoundKeys = curVibrationKeys = 0;
 
 
     //Create timeline
-    timeline = Timeline (2, 2, 2, lengthOfTimeLine: numberOfMinutes,numLights: numLights, numVibrations: numVibrations, numSounds: numSounds, numLightKeys: 6);
+    timeline = Timeline (level:homePage.levelNumber, lightWidth: 2, vibrationWidth: 2, soundWidth: 2, numLightKeys: 6);
     timeline.create();
 
     index = 0;
@@ -431,6 +449,10 @@ class Choreographer
     //Start timer
     timer1InProgress = false;
     timer1 = Timer.periodic(Duration(milliseconds: 1000), (timer) async {
+      if (timelinePaused) {
+        return;
+      }
+
       timer1InProgress = true;
       if (gameTime > 0) {
         gameTime -= 1;
@@ -438,9 +460,7 @@ class Choreographer
       }
       if (gameTime == 0) {
         setStatusToReady(false);
-        DateTime now = DateTime.now();
-        String formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(now);
-        Scores.addString("$formattedDate Level-$level ${getResultString()}? Puzzle-${getPuzzleString()} Lights-${getLightString()} Vibration-${getVibrationString()} Sound-${getSoundString()}");
+        updateScores();
         LevelHistory.updateLevelHistory(level, getResultString());
         display();
       }
@@ -450,7 +470,6 @@ class Choreographer
         //Remove window
         if (continueSoundWindow) {
           String temp = DateTime.now().toString();
-          print ('Continue sound $temp');
         }
         continueSoundWindow = continueVibWindow = false;
         continueLightWindow = -1;
@@ -463,7 +482,6 @@ class Choreographer
             totalLightKeys+=1;
             homePage.state.setLightCount(curLightKeys, totalLightKeys);
             beginLightKey = curTimeUnit.lightKey;
-            print ('Turning light on at $index and light number is ${curTimeUnit.lightKey}');
           }
         }
 
@@ -499,7 +517,7 @@ class Choreographer
              vibSoundCorridor.turnVibrationsOff();
            }
            beginVibKey = 0;
-           print ('Turning vibration off at $index}');
+           //print ('Turning vibration off at $index}');
         }
       }
 
@@ -507,12 +525,12 @@ class Choreographer
       if (curTimeUnit.active) {
         if (curTimeUnit.startSounds) {
           String temp = DateTime.now().toString();
-          print ('Start sound $temp');
+          //print ('Start sound $temp');
           beginSoundKey = 1;
           totalSoundKeys++;
           await vibSoundCorridor.turnSoundsOn();
           homePage.state.setSoundCount(curSoundKeys, totalSoundKeys);
-          print ('Turning sound on at $index}');
+          //print ('Turning sound on at $index}');
         }
       }
 
@@ -520,13 +538,13 @@ class Choreographer
       if (curTimeUnit.active) {
         if (curTimeUnit.stopSounds) {
           String temp = DateTime.now().toString();
-          print ('Stop sound $temp');
+          //print ('Stop sound $temp');
           if (beginSoundKey == 1) {
             continueSoundWindow = true;
             await vibSoundCorridor.turnSoundsOff();
           }
           beginSoundKey = 0;
-          print ('Turning sound off at $index}');
+          //print ('Turning sound off at $index}');
         }
       }
 
@@ -565,17 +583,14 @@ enum TimeLineEntries {
 }
 
 class Timeline {
-  final int lengthOfTimeLine;
-  final int numLights;
-  final int numVibrations;
-  final int numSounds;
+  final int level;
   final int numLightKeys;
   final int lightWidth;
   final int vibrationWidth;
   final int soundWidth;
   List<Timeunit> timeUnitList;
 
-  Timeline (this.lightWidth, this.vibrationWidth, this.soundWidth, {this.lengthOfTimeLine, this.numLights, this.numVibrations, this.numSounds, this.numLightKeys});
+  Timeline ({this.level, this.lightWidth, this.vibrationWidth, this.soundWidth, this.numLightKeys});
 
   Timeunit getTimeUnit(int index) {
     return timeUnitList[index];
@@ -586,59 +601,38 @@ class Timeline {
     return timeUnitList.length;
   }
 
-  List<TimeLineEntries> CompleteShuffleColumn(int numLightEntries, int numVibEntries, int numSoundEntries, int defaultEntry, int colLength) {
-    int numLightEntries1 = (numLightEntries/2).toInt();
-    int numLightEntries2 = (numLightEntries - numLightEntries1).toInt();
-    int numVibEntries1 = (numVibEntries/2).toInt();
-    int numVibEntries2 = (numVibEntries - numVibEntries1).toInt();
-    int numSoundEntries1 = (numSoundEntries/2).toInt();
-    int numSoundEntries2 = (numSoundEntries - numSoundEntries1).toInt();
-    int halfLength = (colLength/2).toInt();
-    int remLength = colLength - halfLength;
-    List<TimeLineEntries> list1 = ShuffleColumn(numLightEntries1, numVibEntries1,numSoundEntries1, defaultEntry, halfLength);
-    List<TimeLineEntries> list2 = ShuffleColumn(numLightEntries2, numVibEntries2,numSoundEntries2, defaultEntry, remLength);
-    if (list1[0] == TimeLineEntries.NoEntry) {
-      int chosenEntry = Random(DateTime.now().millisecond).nextInt(3);
-      if (chosenEntry == 0) {
-        list1[0] = TimeLineEntries.LightEntry;
-      } else if (chosenEntry == 1) {
-        list1[0] = TimeLineEntries.VibrationEntry;
-      } else {
-        list1[0] = TimeLineEntries.SoundEntry;
-      }
-    }
+
+
+  List<TimeLineEntries> CompleteShuffleColumn({int level, int defaultEntry, int colLength}) {
+    int unitTime = (colLength / Level.getEventComplexity(level)).truncate();
     List<TimeLineEntries> list = [];
-    list.addAll(list1);
-    list.addAll(list2);
+    //Initialize timeine with no entries
+    for (int i = 0; i < colLength; i++) {
+      list.add(TimeLineEntries.NoEntry);
+    }
+    //loop over all the unitTime segments
+    //in each loop select light column or vibSound column and add it
+    // add the other one in the next segment
+    int curTotalUnitTime = 0;
+    bool lightsTurn = Random(DateTime.now().second).nextBool();
+    bool vibsTurn = Random(DateTime.now().second).nextBool();
+    while (curTotalUnitTime < colLength) {
+      if (lightsTurn) {
+        list[curTotalUnitTime] = TimeLineEntries.LightEntry;
+        lightsTurn = false;
+      } else {
+        if (vibsTurn) {
+          list[curTotalUnitTime] = TimeLineEntries.VibrationEntry;
+          vibsTurn = false;
+        } else {
+          list[curTotalUnitTime] = TimeLineEntries.SoundEntry;
+          vibsTurn = true;
+        }
+        lightsTurn = true;
+      }
+      curTotalUnitTime += unitTime;
+    }
     return list;
-  }
-
-    List<TimeLineEntries> ShuffleColumn(int numLightEntries, int numVibEntries, int numSoundEntries, int defaultEntry, int colLength) {
-    //Create the list
-    List<TimeLineEntries> workingList = List<TimeLineEntries> (colLength);
-    //Initialize the remaining entries with the default
-    for( int i = 0; i < colLength; i++) {
-      workingList[i] = TimeLineEntries.NoEntry;
-    }
-
-    //Initialize the array with Light Entries
-    for( int i = 0; i < numLightEntries; i++) {
-      workingList[i] = TimeLineEntries.LightEntry;
-    }
-
-    //Initialize the remaining entries with Vibration Entries
-    for( int i = 0; i < numVibEntries; i++) {
-      workingList[i+numLightEntries] = TimeLineEntries.VibrationEntry;
-    }
-
-    //Initialize the remaining entries with Vibration Entries
-    for( int i = 0; i < numSoundEntries; i++) {
-      workingList[i+numLightEntries+numVibEntries] = TimeLineEntries.SoundEntry;
-    }
-
-    workingList.shuffle(Random(DateTime.now().millisecond));
-
-    return workingList;
   }
 
   void SetASectionActive(int index, int width) {
@@ -695,33 +689,17 @@ class Timeline {
   }
 
   void create() {
-    int totalNumOfLights, totalNumOfVibrations, totalNumOfSounds, totalTimeUnits;
-    //Number of lights
-    totalNumOfLights = lengthOfTimeLine * numLights;
-    print ("totalNumOfLights $totalNumOfLights");
-
-    //Number of vibrations
-    totalNumOfVibrations = lengthOfTimeLine * numVibrations;
-    print ('totalNumOfVibrations $totalNumOfVibrations');
-
-    //Number of sounds
-    totalNumOfSounds = lengthOfTimeLine * numSounds;
-    print ('totalNumOfSounds $totalNumOfSounds');
-
-    //Number of time units to create
-    totalTimeUnits = lengthOfTimeLine * 60;
+    int totalTimeUnits = Level.getTestTime(level);
 
     //Create time units
-    timeUnitList = List<Timeunit> (totalTimeUnits);
+    timeUnitList = List(totalTimeUnits);
     for(int i=0; i <  timeUnitList.length; i++) {
       timeUnitList[i] = Timeunit();
     }
 
-//    List<TimeLineEntries> ShuffleColumn(int numLightEntries, int numVibEntries, int numSoundEntries, int defaultEntry, int colLength) {
-
     //Setup light timeline
     int defaultEntry = 1000;
-    List<TimeLineEntries> lightTriggers = CompleteShuffleColumn(totalNumOfLights, totalNumOfVibrations, totalNumOfSounds, defaultEntry, lengthOfTimeLine*60);
+    List<TimeLineEntries> lightTriggers = CompleteShuffleColumn(level:level, defaultEntry: defaultEntry, colLength: Level.getTestTime(level));
 
     //Add it to the timeline
     var randomKey = new Random();

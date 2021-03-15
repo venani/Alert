@@ -163,7 +163,7 @@ class PieceState extends State<Piece> {
           //width: widget.pieceSize.width * widget.maxCol,
           height: widget.puzzleSize.height,
           //(xScale < yScale)? widget.imageSize.height / xScale: widget.imageSize.height / yScale,
-          child: ColorFiltered( colorFilter: ColorFilter.mode(Colors.white, BlendMode.softLight),
+          child: Opacity( opacity: 0.75,
               child: widget.image)//Container(color: Color(0xFF0E3311).withOpacity(0.7)))
       );
     }
@@ -274,9 +274,9 @@ class PuzzlePiecePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()
-     ..color = outline ? ((isMovable) ? Colors.yellow: Colors.black) : Color.fromRGBO(0, 0,0, 0.0)//Colors.black54//Color(0x80FFFFFF)
+     ..color = outline ? ((isMovable) ? Colors.yellow: Colors.yellow) : Colors.white//Colors.black54//Color(0x80FFFFFF)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = outline ? ((isMovable) ? 3.0: 2.0) : 0.0;
+      ..strokeWidth = outline ? ((isMovable) ? 3.0: 4.0) : 0.0;
 
     canvas.drawPath(getPiecePath(size, row, col, maxRow, maxCol), paint);
   }
