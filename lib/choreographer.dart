@@ -52,6 +52,8 @@ class Choreographer
   int continueLightWindow = -1;
   bool continueVibWindow = false;
   bool continueSoundWindow = false;
+  bool puzzleCompleted = false;
+  bool timeoutCompleted = false;
 
   Timer timer1;
   Timer timer2;
@@ -344,15 +346,8 @@ class Choreographer
         homePage.state.setPuzzleCompletion(
             numOfCompletedPieces, totalPuzzlePieces);
         if (numOfCompletedPieces == totalPuzzlePieces) {
-          setStatusToReady(false);
-          homePage.state.setState(() {
-            homePage.state.lastResult = getResultString();
-            DateTime now = DateTime.now();
-            String formattedDate = DateFormat('yyyy/MM/dd kk:mm').format(now);
-            Scores.addString("$formattedDate Test-$level ${getResultString()}? Puzzle-${getPuzzleString()} Lights-${getLightString()} Vibration-${getVibrationString()} Sound-${getSoundString()}");
-            LevelHistory.updateLevelHistory(level, getResultString());
-            display();
-          });
+          puzzleCompleted = true;
+          gameTime = 1;
         }
         else {
           DateTime l1, l2;
@@ -393,8 +388,8 @@ class Choreographer
   String getResultString () {
     bool puzzleCompleted = false;
     int events = 0;
-    String result = 'More effort';
-
+    String result = 'Incomplete';
+    totalPuzzlePieces =  homePage.state.cols * homePage.state.rows;
     if (numOfCompletedPieces == totalPuzzlePieces) {
       puzzleCompleted = true;
     }
@@ -411,21 +406,23 @@ class Choreographer
       if (events == 3) {
         result = LevelHistory.complete;
       } else if (events == 2) {
-        result = LevelHistory.complete; //'Good';
+        result = LevelHistory.incomplete; //'Good';
       } else if (events == 1) {
+        result = LevelHistory.incomplete;
+      } else {
         result = LevelHistory.incomplete;
       }
     } else {
-      result = LevelHistory.moreEffort;
+      result = LevelHistory.incomplete;
     }
-
     return result;
   }
 
   void updateScores() {
     DateTime now = DateTime.now();
-    String formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(now);
+    String formattedDate = DateFormat('yyyy/MM/dd  kk:mm').format(now);
     Scores.addString("$formattedDate Level-$level ${getResultString()}? Puzzle-${getPuzzleString()} Lights-${getLightString()} Vibration-${getVibrationString()} Sound-${getSoundString()}");
+    LevelHistory.updateLevelHistory(level, getResultString());
   }
 
   void start() {
@@ -433,7 +430,11 @@ class Choreographer
     gameTime = Level.getTestTime(homePage.levelNumber);
     totalLightKeys = totalSoundKeys = totalVibrationKeys = 0;
     curLightKeys = curSoundKeys = curVibrationKeys = 0;
+    timeoutCompleted = puzzleCompleted = false;
 
+
+    //Setup sound
+    vibSoundCorridor.setupSound();
 
     //Create timeline
     timeline = Timeline (level:homePage.levelNumber, lightWidth: 2, vibrationWidth: 2, soundWidth: 2, numLightKeys: 6);
@@ -452,20 +453,32 @@ class Choreographer
       if (timelinePaused) {
         return;
       }
-
       timer1InProgress = true;
+
+      //Get time unit
+      Timeunit curTimeUnit = timeline.getTimeUnit(index);
+      bool needToStop = false;
+      if (index != timeline.getLengthOfTimeline()) {
+        needToStop = true;
+      } else {
+        curTimeUnit = timeline.getTimeUnit(index - 1);
+        curTimeUnit.active = false;
+      }
+
       if (gameTime > 0) {
         gameTime -= 1;
         homePage.state.setTimeRemaining(gameTime);
       }
       if (gameTime == 0) {
-        setStatusToReady(false);
-        updateScores();
-        LevelHistory.updateLevelHistory(level, getResultString());
-        display();
+        timeoutCompleted = true;
       }
-      if (isReady()) {
-        timer.cancel();
+      if (((timeoutCompleted || puzzleCompleted ) && (needToStop || !curTimeUnit.active))) {
+        setStatusToReady(false);
+        homePage.state.setState(() {
+          homePage.state.lastResult = getResultString();
+          updateScores();
+          display();
+        });
       } else {
         //Remove window
         if (continueSoundWindow) {
@@ -473,8 +486,7 @@ class Choreographer
         }
         continueSoundWindow = continueVibWindow = false;
         continueLightWindow = -1;
-        //Get time unit
-        Timeunit curTimeUnit = timeline.getTimeUnit(index);
+
         //Should we light on
         if (curTimeUnit.active) {
           if (curTimeUnit.startLight) {
@@ -548,8 +560,7 @@ class Choreographer
         }
       }
 
-      //Should we stop the timer
-
+        //Should we stop the timer
         //Point to the next time slot
         index++;
       }

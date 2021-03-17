@@ -36,43 +36,6 @@ void main() async {
   runApp(MindfullnessAlertExcerciserApp());
 }
 
-// class MyApp extends StatelessWidget {
-//   // This widget is the root of your application.
-//   @override void initState() async {
-//     theStorage = await SharedPreferences.getInstance();
-//     Scores.items = await theStorage.getStringList(Scores.storageKey);
-//     if (theStorage == null) {
-//       print("It is null");
-//     } else {
-//       print("It is not null");
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Flutter Demo',
-//       theme: ThemeData(
-//         // This is the theme of your application.
-//         //
-//         // Try running your application with "flutter run". You'll see the
-//         // application has a blue toolbar. Then, without quitting the app, try
-//         // changing the primarySwatch below to Colors.green and then invoke
-//         // "hot reload" (press "r" in the console where you ran "flutter run",
-//         // or simply save your changes to "hot reload" in a Flutter IDE).
-//         // Notice that the counter didn't reset back to zero; the application
-//         // is not restarted.
-//         primarySwatch: Colors.blue,
-//         // This makes the visual density adapt to the platform that you run
-//         // the app on. For desktop platforms, the controls will be smaller and
-//         // closer together (more dense) than on mobile platforms.
-//         visualDensity: VisualDensity.adaptivePlatformDensity,
-//       ),
-//       home: MyHomePage(title: 'Mindfull Application', levelNumber: 1,),
-//     );
-//   }
-// }
-
 class MyHomePage extends StatefulWidget {
   final String title;
   final int levelNumber;
@@ -163,7 +126,7 @@ class _MyHomePageState extends State<MyHomePage> {
           timeRemainingColor = Colors.transparent;
           timeRemainingStatus = true;
         }
-        timeRemaining = numSeconds.toString();
+        timeRemaining = numSeconds.toString().padLeft(7);
       });
     }
 
@@ -261,60 +224,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
     Image image2 = Image(
         image: ResizeImage(MemoryImage(bytes),
-            width: (image.width / factor).toInt(),
-            height: (image.height / factor).toInt()));
-    //Image image2 = Image ( image: ResizeImage( MemoryImage(bytes), width: (image.width).toInt(), height: (image.height).toInt()));
-//    Image image1 = Image(image: image2,)
-
-    // Rect src, dst;
-    // src = Rect.fromLTWH(0.0, 0.0, image.width/factor, image.height/factor);
-    // dst = Rect.fromLTWH(0.0, 0.0, destSize.width, destSize.height);
-    //
-    // var pictureRecorder = new ui.PictureRecorder();
-    // ui.Canvas canvas = new ui.Canvas(pictureRecorder);
-    // canvas.drawImageRect(image, src, dst, Paint());
-    // ui.Image image3 = await pictureRecorder.endRecording().toImage(dst.width.floor(), dst.height.floor());
-
-    // //ImagePicker
-    //
-    // ByteData newByteData = await image3.toByteData();
-    // List<int> newBytes = byteList = Uint8List.view(newByteData.buffer);
-    // return Image.memory(newBytes,
-    //       scale: 1.0,
-    //       width: destSize.width,
-    //       height: destSize.height,
-    //       repeat: ImageRepeat.noRepeat);
+        width: (image.width / factor).toInt(),
+        height: (image.height / factor).toInt()));
     return image2;
   }
-
-  //
-  //
-  // // print ("The length of bytes are ${ bytes.length}");
-  // // ui.Codec codec = await ui.instantiateImageCodec(byteData.buffer.asUint8List());
-  // // ui.FrameInfo fi = await codec.getNextFrame();
-  // // int width = fi.image.width;
-  // // int height = fi.image.height;
-  // // img.Image image = img.Image.fromBytes(width, height, bytes, format: img.Format.rgba);
-  //
-  // //img.Image image = img.decodeImage(());
-  // //List<int> decodeBytes = image.getBytes();
-  // // imageSize = Size(fi.image.width.toDouble(), fi.image.height.toDouble());
-  //
-  //  // Scale image
-  // imageSize = Size(image.width.toDouble(), image.height.toDouble());
-  // double xFactor = imageSize.width / destSize.width ;
-  // double yFactor = imageSize.height / destSize.height;
-  // double factor = (xFactor > yFactor) ? yFactor : xFactor;
-  // // img.Image image1 = img.copyResize(image, width: (imageSize.width/factor).toInt(), height: ((imageSize.height)/factor).toInt(), interpolation: img.Interpolation.average);
-  // // imageSize = Size(image1.width.toDouble(), image1.height.toDouble());
-  // // img.Image image3 = img.copyCrop(image1, 0, 0,  (destSize.width/2.0).toInt(), (destSize.height/2.0).toInt());
-  // // imageSize = Size(image3.width.toDouble(), image3.height.toDouble());
-  //  byteList = bytes = image.getBytes(format: img.Format.rgb);
-  // return Image.memory(bytes,
-  //     scale: 1.0,
-  //     width: destSize.width,
-  //     height: destSize.height,
-  //     repeat: ImageRepeat.noRepeat);
 
   Uint8List createImage(int width, int height) {
     img.Image image = img.Image(width, height);
@@ -376,6 +289,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Size puzzleSize;
     setState(() {
       puzzleSize = puzzleKey.currentContext.size;
+      print ('Puzzle size is ${puzzleSize.width} ${puzzleSize.height}');
       lightCorridorSize = lightCorridorKey.currentContext.size;
       vibSoundCorridorSize = vibSoundCorridorKey.currentContext.size;
       timerBarSize = timerKey.currentContext.size;
@@ -420,24 +334,7 @@ class _MyHomePageState extends State<MyHomePage> {
     for (int y = 0; y < rows; y++) {
       for (int x = 0; x < cols; x++) {
         index = x  + y*cols;
-/*        piece1 = Piece(
-            key: GlobalKey(),
-            image: backgroundImage,
-            imageSize: imageSize,
-            puzzleSize: Size(puzzleSize.width, puzzleSize.height / 2.0),
-            yOffset: 0.0,
-            row: y,
-            col: x,
-            maxRow: rows,
-            maxCol: cols,
-            bringToTop: bringToTop,
-            sendToBack: sendToBack,
-            updateState: updateState,
-            xCenterOffset: xCenterOffset,
-            pieceSize: pieceSize,
-            backgroundImage: false,
-            filter: true);
-*/
+
         piece2 = Piece(
             key: GlobalKey(),
             image: backgroundImage,
@@ -455,7 +352,6 @@ class _MyHomePageState extends State<MyHomePage> {
             pieceSize: pieceSize,
             backgroundImage: false,
             filter: false);
-//        pieces.add(piece1);
         tempList2.add(piece2);
       }
     }
@@ -519,15 +415,7 @@ class _MyHomePageState extends State<MyHomePage> {
     lightRate = Level.getEventComplexity(widget.levelNumber);
     vibrationRate = Level.getEventComplexity(widget.levelNumber);
     soundRate = Level.getEventComplexity(widget.levelNumber);
-
-    //Size puzzleSize = puzzleKey.currentContext.size;
     splitImage();
-    // _assetsAudioPlayer = AssetsAudioPlayer();
-    // _assetsAudioPlayer.open(
-    //     Audio(
-    //         "assets/sound/win.mp3")
-    // );
-
     super.initState();
     }
 
@@ -566,41 +454,9 @@ class _MyHomePageState extends State<MyHomePage> {
       await Future.delayed(Duration(seconds: 2));
       overlayEntry.remove();
   }
-  // void shuffleLowerPieces ()
-  // {
-  //   setState(() {
-  //     List<Piece> lowerPieces = List<Piece>();
-  //     List<Piece> upperPieces = List<Piece>();
-  //     int length = pieces.length;
-  //
-  //     double extraSpace = 2.0 * pieces[0].xCenterOffset / (cols - 1);
-  //
-  //     //remove the bottom half
-  //     int limit = ((length/2)-1).toInt()+1;
-  //     upperPieces = pieces.sublist(0, limit);
-  //     lowerPieces = pieces.sublist(limit);
-  //     lowerPieces.shuffle();
-  //     for (int x = 0; x < cols; x++) {
-  //       for (int y = 0; y < rows; y++) {
-  //         int index = x * rows + y;
-  //         lowerPieces[index].initLeft = lowerPieces[index].xCenterOffset + ((x - lowerPieces[index].col) * lowerPieces[index].pieceSize.width - lowerPieces[index].xCenterOffset) + x * extraSpace;
-  //         lowerPieces[index].initTop  = (y - lowerPieces[index].row) * lowerPieces[index].pieceSize.height + lowerPieces[index].puzzleSize.height / 2;
-  //       }
-  //     }
-  //     upperPieces.addAll(lowerPieces);
-  //     pieces = upperPieces;
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-
     widget.state = this;
     if (pieces != null) {
       print("size of pieces is ${pieces.length}");
@@ -628,7 +484,6 @@ class _MyHomePageState extends State<MyHomePage> {
               child: Container(
                 decoration: new BoxDecoration(
                     gradient: new LinearGradient(
-//                    colors: [const Color(0xFF000046), const Color(0xFF1CB5E0)],
                         colors: [Colors.indigo, Colors.black, Colors.black],
                         begin: Alignment.topRight,
                         end: Alignment.bottomLeft)),
@@ -667,7 +522,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                    children: [
-                                     Text("Level", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
+                                     Text("Test", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
                                      Text("  ${widget.levelNumber}", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                                    ],
                                  ),
@@ -681,23 +536,23 @@ class _MyHomePageState extends State<MyHomePage> {
                               flex: 8,
                               child: Stack(children: pieces)),
                           Expanded(
-                              key: vibSoundCorridorKey,
-                              flex: 2,
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        Text("Secs", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
-                                        Text("$timeRemaining", style: TextStyle(backgroundColor: timeRemainingColor, color: Colors.white, fontWeight: FontWeight.bold)),
-                                      ],
-                                    ),
-                                  ),
-                                  Positioned(
-                                    child: Stack(children: vibSoundButtons)),]
-                              )),
-                        ],
+                               key: vibSoundCorridorKey,
+                               flex: 2,
+                               child: Stack(
+                                 children: [
+                                   Positioned(
+                                     child: Column(
+                                       crossAxisAlignment: CrossAxisAlignment.center,
+                                       children: [
+                                         Text("Secs", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold, fontSize: 15)),
+                                         Text("$timeRemaining", style: TextStyle(backgroundColor: timeRemainingColor, color: Colors.white, fontWeight: FontWeight.bold)),
+                                       ],
+                                     ),
+                                   ),
+                                   Positioned(
+                                     child: Stack(children: vibSoundButtons)),]
+                               )),
+                      ],
                       ),
                     ),
                     Expanded(
@@ -792,30 +647,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-showAlertDialog (BuildContext context) {
-  // set up the buttons
-  Widget cancelButton = TextButton(
-    child: Text("Yes"),
-    onPressed:  () {},
-  );
-  Widget continueButton = TextButton(
-    child: Text("No"),
-    onPressed:  () {},
-  );
-  // set up the AlertDialog
-  AlertDialog alert = AlertDialog(
-    title: Text("AlertDialog"),
-    backgroundColor: Colors.white,
-    shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(18.0), side: BorderSide(color: Colors.black)),
-    content: Text("Do you really want to cancel?"),
-    actions: [
-      cancelButton,
-      continueButton,
-    ],
-  );
-  // show the dialog
-}
-
 class MindfullnessAlertExcerciserApp extends StatefulWidget {
 
   MindfullnessAlertExcerciserApp();
@@ -839,81 +670,3 @@ class _MindfullnessAlertExcerciserAppState extends State<MindfullnessAlertExcerc
     );
   }
 }
-
-class LevelData {
-  final int levelNumber;
-  final String puzzleComplexity;
-  final int eventComplexity;
-  LevelData ({this.levelNumber, this.puzzleComplexity, this.eventComplexity});
-}
-
-
-class Instructions extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Instructions will come here"),)
-    );
-  }
-}
-
-
-// Stack(
-//   children: [
-//     Positioned(
-//       child: Container(
-//         width: (timerBarSize == null)? 10 : timerBarSize.width * 0.80,
-//         height: (timerBarSize == null)? 10: timerBarSize.height,
-//         decoration: BoxDecoration( image: DecorationImage(image: AssetImage('assets/images/files/progressBar.png'), fit: BoxFit.fill)))
-//       ),
-//     Positioned(
-//       child: Container(
-//       width: (timerBarSize == null)? 10 : timerBarSize.width*timerBarValue*0.80/(timerBarTotalValue),
-//       height: (timerBarSize == null)? 10: timerBarSize.height,
-//           decoration: BoxDecoration( image: DecorationImage(image: AssetImage('assets/images/files/progressBarInc.png'), fit: BoxFit.fill)))
-//     ),
-//   ],
-// )
-// debugPrint('FAB clicked');
-// Navigator.push(context, MaterialPageRoute(builder: (context) {
-//   return Container(
-//     child: FloatingActionButton(onPressed: () {
-//       debugPrint('FAB clicked - Poped');
-//       Navigator.pop(context);
-//     }),
-//   );
-// }));
-
-/*
-/*                        child: Container(
-                          child: Column(children: [
-                            Expanded(
-                                child: RaisedButton(
-                              onPressed: () async {
-                                playHandler();
-                                if (await Vibration.hasVibrator()) {
-                                  print(
-                                      'audio player has vibration capability');
-                                  Vibration.vibrate();
-                                } else {
-                                  print('audio player');
-                                }
-                              },
-                              child: Text("Sound"),
-                              color: Colors.blue,
-                              textColor: Colors.white,
-                            )),
-                            Expanded(
-                                child: RaisedButton(
-                              onPressed: () {
-                                Vibration.vibrate(duration: 5000);
-                                print('vibrate');
-                              },
-                              child: Text("Vibrate"),
-                              color: Colors.deepPurple,
-                              textColor: Colors.white,
-                            ))
-                          ]),
-                        )),*/
-
- */

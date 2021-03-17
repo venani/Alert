@@ -50,8 +50,3 @@ class LevelHistory {
   }
 }
 
-// setState(() {
-// LevelHistory.clearLevelHistory();
-// Navigator.of(context, rootNavigator: true).pop();
-// });
-

@@ -25,6 +25,11 @@ class Scores extends StatefulWidget {
     Storage.storage.setStringList(storageKey, []);
   }
 
+  static String getLastString () {
+    List<String> list = getList();
+    String lastResult = list.last;
+
+  }
   static void addString (String item) async {
     print ('addString request for $item');
     List<String> items = await getList();
@@ -40,7 +45,17 @@ class Scores extends StatefulWidget {
 }
 
 class _ScoresState extends State<Scores> {
-
+@override
+  void initState() {
+    // TODO: implement initState
+    List<String> list = Scores.getList();
+    int index = 0;
+    list.forEach((element) {
+      index++;
+      print('$index $element');
+    });
+    super.initState();
+  }
   @override
   Widget build(BuildContext context)  {
     return Scaffold(
@@ -63,6 +78,9 @@ class _ScoresState extends State<Scores> {
                        String testStatus = Scores.getList()[index].split('-')[1].split(' ')[1].split('?')[0];
                        Color testColor = LevelHistory.testColor(testStatus);
                        print ('Test status is $testStatus $testColor');
+                       print (' index is $index/${Scores.getList().length} entry is ${Scores.getList()[index]}');
+                       print ('Component 1 ${Scores.getList()[index].split('?')[0]}');
+                       print ('Component 2 ${ Scores.getList()[index].split('?')[1]}');
                         return Card(color: testColor,
                             borderOnForeground: true,
                             child: ListTile(isThreeLine: true, tileColor: testColor,

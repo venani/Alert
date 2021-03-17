@@ -27,9 +27,9 @@ class _StartAppState extends State<StartApp> {
   void initState()  {
     super.initState();
     String title = "Welcome";
-    String info =  "This fun Mindfulness App helps with exercising your alertness capability by working on a task and paying attention "
-        "to your vision, touch and hearing senses. \n\n"
-        "For details on how to use the App, click on 'Play Details', \nafter dismissing this dialog.";
+    String info =  "This fun Mindfulness App helps with exercising your alertness capability by allowing you to work on a task while being alert "
+        "to events to your vision, touch and hearing senses. \n\n"
+        "For details on how to use the App, click on 'Test Details', after clicking anywhere on this dialog.";
     Timer(Duration(milliseconds: 200), () =>  Navigator.of(context).push(PageRouteBuilder(
         opaque: false,
         pageBuilder: (BuildContext context, _, __) =>
@@ -63,7 +63,7 @@ class _StartAppState extends State<StartApp> {
             Expanded(
               flex: 1,
               child: Center(
-                child: Text ('Please select a test', style: TextStyle( color: Colors.white, fontSize: 20),
+                child: Text ('Please select a test', style: TextStyle( color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -97,6 +97,8 @@ class _StartAppState extends State<StartApp> {
                         (LevelHistory.levelHistory[index] == LevelHistory.notStarted) ? Colors.blue : Colors.yellowAccent,
                         elevation: 10,
                         onPressed: () async {
+                          bool temp = await Vibration.hasVibrator();
+                          print ('Vibration capability $temp');
                           bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
                           if (await Vibration.hasVibrator() || simulator) {
                             Navigator.push(context,
@@ -198,7 +200,7 @@ class _StartAppState extends State<StartApp> {
                       child: FloatingActionButton.extended(
                           label: Column(
                             children: [
-                              Text("Play"),
+                              Text("Test"),
                               Text("Details"),
                             ],
                           ),

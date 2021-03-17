@@ -107,7 +107,7 @@ class VibSoundCorridor
     // int status = await audioPlayer.pause();
     // audioPlayer.setVolume(1.0);
     // print('It should be off by now');
-    await assetsAudioPlayer.open(Audio("assets/sound/mind.mp3"), autoStart: false);
+    await assetsAudioPlayer.open(Audio("assets/sound/mind.mp3"), autoStart: false, loopMode: LoopMode.single);
   }
 }
 
@@ -159,7 +159,7 @@ class _VibSoundButtonState extends State<VibSoundButton> {
         left: widget.leftPos,
         width: widget.vibCorridorSize.width,
         height: widget.vibCorridorSize.width,
-        child: FlatButton(
+        child: RaisedButton(
           padding: const EdgeInsets.all(0.0),
           key: localKey,
           onPressed: () {
@@ -170,7 +170,7 @@ class _VibSoundButtonState extends State<VibSoundButton> {
           child: new Icon(
             (widget.vibSoundType == VibSoundType.Vibration) ? Icons.vibration : Icons.music_note,
             color: Colors.white,
-            size: widget.vibCorridorSize.width-2.0,
+            size: widget.vibCorridorSize.width - 10.0,
           ),
           shape: new CircleBorder(side: BorderSide(width: 3.0, color: Colors.yellow)),
           color: curColor,

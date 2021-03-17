@@ -90,6 +90,18 @@ flutter:
   assets:
     - assets/images/files/TestSelectionScreen.png
     - assets/images/files/TestExerciserScreen.png
+    - assets/sound/mind.mp3
+    - assets/sound/mind1.mp3
+    - assets/images/files/roses.jpg
+    - assets/images/files/halfpeacock.jpg
+    - assets/images/files/lightStore.jpg
+    - assets/images/files/balls.jpg
+    - assets/images/files/market.jpg
+    - assets/images/files/palace.jpg
+    - assets/images/files/skyScrapers.jpg
+    - assets/images/files/cheetah.jpg
+    - assets/images/files/rainbow.jpg
+    - assets/images/files/peacock.jpg
     - packages/mindfulAlert/assets/images/files/roses.jpg
     - packages/mindfulAlert/assets/images/files/halfpeacock.jpg
     - packages/mindfulAlert/assets/images/files/lightStore.jpg
@@ -99,9 +111,4 @@ flutter:
     - packages/mindfulAlert/assets/images/files/skyScrapers.jpg
     - packages/mindfulAlert/assets/images/files/cheetah.jpg
     - packages/mindfulAlert/assets/images/files/rainbow.jpg
-    - packages/mindfulAlert/assets/images/files/palace.jpg
     - packages/mindfulAlert/assets/images/files/peacock.jpg
-    - packages/mindfulAlert/assets/sound/mind.mp3
-    - assets/sound/win.mp3
-    - assets/sound/mind.mp3
-    - assets/sound/win1.mp3
