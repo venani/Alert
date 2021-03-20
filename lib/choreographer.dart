@@ -69,12 +69,12 @@ class Choreographer
     vibSoundCorridor.setClickCallBack(VibSoundCallback);
     vibSoundCorridor.setupSound();
     level = homePage.levelNumber;
-    numLights = numVibrations = numSounds = Level.getEventComplexity(homePage.levelNumber);
+    numLights = numVibrations = numSounds = Level.getNumberOfEvents(homePage.levelNumber);
     if (homePage.state == null) {
       homePage.state.gameStatus = readyText;
     }
 
-    gameTime = Level.getTestTime(homePage.levelNumber);
+    gameTime = Level.getTotalTestTime(homePage.levelNumber);
     homePage.state.setTimeRemaining(gameTime);
   }
 
@@ -432,7 +432,7 @@ class Choreographer
 
   void start() {
 
-    gameTime = Level.getTestTime(homePage.levelNumber);
+    gameTime = Level.getTotalTestTime(homePage.levelNumber);
     totalLightKeys = totalSoundKeys = totalVibrationKeys = 0;
     curLightKeys = curSoundKeys = curVibrationKeys = 0;
     timeoutCompleted = puzzleCompleted = false;
@@ -620,7 +620,7 @@ class Timeline {
 
 
   List<TimeLineEntries> CompleteShuffleColumn({int level, int defaultEntry, int colLength}) {
-    int unitTime = (colLength / Level.getEventComplexity(level)).truncate();
+    int unitTime = (colLength / Level.getNumberOfEvents(level)).toInt();
     List<TimeLineEntries> list = [];
     //Initialize timeine with no entries
     for (int i = 0; i < colLength; i++) {
@@ -705,7 +705,7 @@ class Timeline {
   }
 
   void create() {
-    int totalTimeUnits = Level.getTestTime(level);
+    int totalTimeUnits = Level.getTotalTestTime(level);
 
     //Create time units
     timeUnitList = List(totalTimeUnits);
@@ -715,7 +715,7 @@ class Timeline {
 
     //Setup light timeline
     int defaultEntry = 1000;
-    List<TimeLineEntries> lightTriggers = CompleteShuffleColumn(level:level, defaultEntry: defaultEntry, colLength: Level.getTestTime(level));
+    List<TimeLineEntries> lightTriggers = CompleteShuffleColumn(level:level, defaultEntry: defaultEntry, colLength: Level.getTotalTestTime(level));
 
     //Add it to the timeline
     var randomKey = new Random();

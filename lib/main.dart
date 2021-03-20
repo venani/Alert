@@ -453,9 +453,9 @@ class _MyHomePageState extends State<MyHomePage> {
     List<String> puzzleComplexity = Level.getPuzzleComplexity(widget.levelNumber).split('x');
     rows = int.parse(puzzleComplexity[0]);
     cols = int.parse(puzzleComplexity[1]);
-    lightRate = Level.getEventComplexity(widget.levelNumber);
-    vibrationRate = Level.getEventComplexity(widget.levelNumber);
-    soundRate = Level.getEventComplexity(widget.levelNumber);
+    lightRate = Level.getNumberOfEvents(widget.levelNumber);
+    vibrationRate = Level.getNumberOfEvents(widget.levelNumber);
+    soundRate = Level.getNumberOfEvents(widget.levelNumber);
     splitImage();
     super.initState();
     }
@@ -530,7 +530,8 @@ class _MyHomePageState extends State<MyHomePage> {
             "Do you really want to cancel?"),
         actions: <Widget>[
           TextButton(
-            child: Text("Yes"),
+            style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
+            child: Text("Yes", style: TextStyle(color: Colors.white)),
             onPressed: () {
               choreography.updateScores();
               choreography.timelinePaused = false;
@@ -543,7 +544,8 @@ class _MyHomePageState extends State<MyHomePage> {
             },
           ),
           TextButton(
-            child: Text("No"),
+            style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
+            child: Text("No",style: TextStyle(color: Colors.white)),
             onPressed: () {
               choreography.timelinePaused = false;
               Navigator.of(context,
@@ -611,7 +613,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     Expanded ( flex: 3, child: Column( children: [
                                           Padding(
                                             padding: const EdgeInsets.only(bottom: 2.0),
-                                            child: Text("Test", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold)),
+                                            child: Text("Test", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
                                           ),
                                           Text("  ${widget.levelNumber}", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),],),),
                                     Expanded(flex: 4, child: Column( children: [
@@ -628,8 +630,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                       Text('$soundCount', style: TextStyle(color: Colors.white))])),
                                     Expanded( flex:3, child: Column( children: [
                                           Padding(
-                                            padding: const EdgeInsets.only(bottom: 4.0),
-                                            child: Text("Secs", style: TextStyle(color: Colors.black, backgroundColor: Colors.yellow, fontWeight: FontWeight.bold)),
+                                            padding: const EdgeInsets.only(bottom: 2.0),
+                                            child: Text("Secs", style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold)),
                                           ),
                                           Text("$timeRemaining", style: TextStyle(backgroundColor: timeRemainingColor, color: Colors.white, fontWeight: FontWeight.bold)),],),),
                                   ]

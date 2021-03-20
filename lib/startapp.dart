@@ -147,7 +147,7 @@ class _StartAppState extends State<StartApp> {
                               children: [
                                 Text('Test-${index + 1}',  style: TextStyle( color: Colors.black, decoration: TextDecoration.underline, fontWeight: FontWeight.bold),),
                                 Text('Size-${Level.getPuzzleComplexity(index + 1)}', style: TextStyle( color: Colors.black, fontSize: 10)),
-                                Text('Events-${Level.getEventComplexity(index + 1)}' , style: TextStyle( color: Colors.black, fontSize: 10)),
+                                Text('Events-${Level.getNumberOfEvents(index + 1)}' , style: TextStyle( color: Colors.black, fontSize: 10)),
                                 Text('${LevelHistory.levelHistory[index]}', style: TextStyle( color: Colors.black, fontSize: 10))
                               ],
                             ),
