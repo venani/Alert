@@ -113,6 +113,11 @@ class Choreographer
       timer2 = null;
     }
 
+    //numOfCompletedPieces = 0;
+    homePage.state.setPuzzleCompletion(
+        numOfCompletedPieces, totalPuzzlePieces);
+    homePage.state.setBackgroundOpacity(1.0);
+
     // Clear time remaining status
     homePage.state.clearTimeRemainingStatus();
     homePage.state.setTimeRemaining(gameTime);

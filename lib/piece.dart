@@ -131,6 +131,7 @@ class Piece extends StatefulWidget {
 
 class PieceState extends State<Piece> {
 
+  static double backgroundOpacity = 1.0;
 
   // void resetPosition () {
   //   if (!retrievedData && !widget.filter) {
@@ -140,6 +141,12 @@ class PieceState extends State<Piece> {
   //     isMovable = true;
   //   }
   // }
+
+  setOpacity (double opacity) {
+    setState(() {
+      backgroundOpacity = opacity;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,13 +164,14 @@ class PieceState extends State<Piece> {
 
     if (widget.backgroundImage) {
       widget.isMovable = false;
+      print ('Inside Opacity is $backgroundOpacity');
       return Positioned(
           top: 0.0,
           left: widget.xCenterOffset,
           //width: widget.pieceSize.width * widget.maxCol,
           height: widget.puzzleSize.height,
           //(xScale < yScale)? widget.imageSize.height / xScale: widget.imageSize.height / yScale,
-          child: Opacity( opacity: 0.75,
+          child: Opacity( opacity: backgroundOpacity,
               child: widget.image)//Container(color: Color(0xFF0E3311).withOpacity(0.7)))
       );
     }
@@ -274,7 +282,7 @@ class PuzzlePiecePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Paint paint = Paint()
-     ..color = outline ? ((isMovable) ? Colors.yellow: Colors.yellow) : Colors.white//Colors.black54//Color(0x80FFFFFF)
+     ..color = outline ? ((isMovable) ? Colors.yellow: Colors.white) : Colors.white//Colors.black54//Color(0x80FFFFFF)
       ..style = PaintingStyle.stroke
       ..strokeWidth = outline ? ((isMovable) ? 3.0: 4.0) : 0.0;
 

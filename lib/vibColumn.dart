@@ -33,14 +33,15 @@ class VibSoundCorridor
   List<VibSoundButton> getList() {
 
     List<VibSoundButton> vibSoundButtonList = List<VibSoundButton>();
-    for (int index=0; index < numberOfVibSoundButtons ; index++) {
+    Size vibSoundSize = Size(vibCorridorSize.width, vibCorridorSize.height/numberOfVibSoundButtons);
+    for (int index=0; index < (numberOfVibSoundButtons) ; index++) {
       if (index % 2 == 0) {
-          vibSoundButtonList.add(VibSoundButton(id: index, topPos: (vibCorridorSize.height * (index+1) / (numberOfVibSoundButtons+1)), updateState: updateState,
-          vibCorridorSize: vibCorridorSize, vibSoundType: VibSoundType.Vibration, clickCallBack: clickCallback));
+          vibSoundButtonList.add(VibSoundButton(id: index, topPos: (vibSoundSize.height * index) , updateState: updateState,
+          vibCorridorSize: vibSoundSize, vibSoundType: VibSoundType.Vibration, clickCallBack: clickCallback));
       }
       else {
-        vibSoundButtonList.add(VibSoundButton(id: index, topPos: (vibCorridorSize.height * (index+1) / (numberOfVibSoundButtons+1)), updateState: updateState,
-          vibCorridorSize: vibCorridorSize, vibSoundType: VibSoundType.Sound, clickCallBack: clickCallback));
+        vibSoundButtonList.add(VibSoundButton(id: index, topPos: (vibSoundSize.height * index) , updateState: updateState,
+          vibCorridorSize: vibSoundSize, vibSoundType: VibSoundType.Sound, clickCallBack: clickCallback));
       }
     }
     return vibSoundButtonList;
@@ -157,23 +158,25 @@ class _VibSoundButtonState extends State<VibSoundButton> {
     return Positioned(
         top: widget.topPos,
         left: widget.leftPos,
-        width: widget.vibCorridorSize.width,
-        height: widget.vibCorridorSize.width,
-        child: RaisedButton(
-          padding: const EdgeInsets.all(0.0),
-          key: localKey,
-          onPressed: () {
-            widget.updateState( () {
-              widget.clickCallBack(widget.vibSoundType == VibSoundType.Vibration);
-            });
-          },
-          child: new Icon(
-            (widget.vibSoundType == VibSoundType.Vibration) ? Icons.vibration : Icons.music_note,
-            color: Colors.white,
-            size: widget.vibCorridorSize.width - 10.0,
+        child: Container(
+          width: widget.vibCorridorSize.width,
+          height: widget.vibCorridorSize.height,
+          child: RawMaterialButton(
+            fillColor: curColor,
+            padding: const EdgeInsets.all(0.0),
+            key: localKey,
+            onPressed: () {
+              widget.updateState( () {
+                widget.clickCallBack(widget.vibSoundType == VibSoundType.Vibration);
+              });
+            },
+            child: new Icon(
+              (widget.vibSoundType == VibSoundType.Vibration) ? Icons.vibration : Icons.music_note,
+              color: Colors.white,
+              size: widget.vibCorridorSize.width,
+            ),
+            shape: RoundedRectangleBorder(side: BorderSide(width: 3.0, color: Colors.yellow), borderRadius: BorderRadius.all(Radius.circular(16.0)) ), //new CircleBorder(side: BorderSide(width: 3.0, color: Colors.yellow)),
           ),
-          shape: new CircleBorder(side: BorderSide(width: 3.0, color: Colors.yellow)),
-          color: curColor,
         )
     );
   }

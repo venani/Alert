@@ -25,9 +25,10 @@ class LightCorridor
   List<Light> getList() {
     lightList = List<Light>();
     Light curLight;
-    for (int index=0; index < numberOfLights; index++) {
-      curLight = Light(id: index+1, topPos: (lightCorridorSize.height * (index+1) / (numberOfLights+1)), updateState: updateState,
-          lightCorridorSize: lightCorridorSize);
+    Size lightSize = Size(lightCorridorSize.width, lightCorridorSize.height/numberOfLights );
+    for (int index=0; index < (numberOfLights); index++) {
+      curLight = Light(id: index+1, topPos: (lightCorridorSize.height * index / numberOfLights), updateState: updateState,
+          lightCorridorSize: lightSize);
       curLight.lightCallback = lightCallback;
       lightList.add (curLight);
     }
@@ -60,6 +61,7 @@ class Light extends StatefulWidget {
     this.updateState
 })
   {
+    print ('height is ${lightCorridorSize.height} and width is ${lightCorridorSize.width}');
   }
   @override
   _LightState createState() {
@@ -104,23 +106,26 @@ class _LightState extends State<Light> {
     return Positioned(
         top: widget.topPos,
         left: widget.leftPos,
-        width: widget.lightCorridorSize.width,
-        height: widget.lightCorridorSize.width,
-        child: FlatButton(
-          padding: const EdgeInsets.all(0.0),
-          key: localKey,
-          onPressed: () {
-            widget.updateState( () {
-              widget.lightCallback(widget.id);
-            });
-          },
-          child: new Icon(
-            Icons.lightbulb,
-            color: Colors.white,
-            size: widget.lightCorridorSize.width,
+        child: Container(
+          width: widget.lightCorridorSize.width,
+          height: widget.lightCorridorSize.height,
+          child: RawMaterialButton(
+            fillColor: curColor,
+            padding: const EdgeInsets.only(bottom: 10.0),
+            key: localKey,
+            onPressed: () {
+              widget.updateState( () {
+                widget.lightCallback(widget.id);
+              });
+            },
+            child: Icon(
+              Icons.lightbulb,
+              color: Colors.white,
+              size: widget.lightCorridorSize.width,
+            ),
+            shape: RoundedRectangleBorder(side: BorderSide(width: 3.0, color: Colors.yellow), borderRadius: BorderRadius.all(Radius.circular(16.0))), //new CircleBorder(side: BorderSide(width: 3.0, color: Colors.yellow)),
+
           ),
-          shape: new CircleBorder(side: BorderSide(width: 3.0, color: Colors.yellow)),
-          color: curColor,
         )
         //child: Text('A'),
         // child: RawMaterialButton(

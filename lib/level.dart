@@ -50,7 +50,7 @@ class Level
       case 39 : complexity = '5x5'; break;
       case 40 : complexity = '5x5'; break;
       case 41 : complexity = '5x5'; break;
-      case 42 : complexity = '5x5'; break;
+      case 42 : complexity = '6x6'; break;
       default : complexity = '2x2';
     }
     return complexity;
@@ -168,15 +168,17 @@ class Level
       case '2x2' : complexity = 30; break;
       case '2x3' : complexity = 40; break;
       case '2x4' : complexity = 50; break;
-      case '2x5' : complexity = 60; break;
-      case '3x3' : complexity = 75; break;
-      case '3x4' : complexity = 90; break;
+      case '3x3' : complexity = 60; break;
+      case '2x5' : complexity = 70; break;
+      case '2x6' : complexity = 80; break;
+      case '3x4' : complexity = 80; break;
       case '3x5' : complexity = 100; break;
-      case '3x5' : complexity = 120; break;
+      case '3x6' : complexity = 120; break;
       case '4x4' : complexity = 130; break;
       case '4x5' : complexity = 140; break;
-      case '5x4' : complexity = 140; break;
-      case '5x5' : complexity = 150; break;
+      case '4x6' : complexity = 150; break;
+      case '5x5' : complexity = 160; break;
+      case '5x6' : complexity = 170; break;
       default : complexity = 30;
     }
     return complexity;

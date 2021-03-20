@@ -8,10 +8,18 @@ PODS:
   - Flutter (1.0.0)
   - flutter_is_emulator (0.0.1):
     - Flutter
+  - image_crop (0.0.1):
+    - Flutter
+  - image_cropper (0.0.4):
+    - Flutter
+    - TOCropViewController (~> 2.6.0)
+  - in_app_purchase (0.0.1):
+    - Flutter
   - path_provider (0.0.1):
     - Flutter
   - shared_preferences (0.0.1):
     - Flutter
+  - TOCropViewController (2.6.0)
   - vibration (1.7.3):
     - Flutter
 
@@ -21,9 +29,16 @@ DEPENDENCIES:
   - audioplayers (from `.symlinks/plugins/audioplayers/ios`)
   - Flutter (from `Flutter`)
   - flutter_is_emulator (from `.symlinks/plugins/flutter_is_emulator/ios`)
+  - image_crop (from `.symlinks/plugins/image_crop/ios`)
+  - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
+  - in_app_purchase (from `.symlinks/plugins/in_app_purchase/ios`)
   - path_provider (from `.symlinks/plugins/path_provider/ios`)
   - shared_preferences (from `.symlinks/plugins/shared_preferences/ios`)
   - vibration (from `.symlinks/plugins/vibration/ios`)
+
+SPEC REPOS:
+  trunk:
+    - TOCropViewController
 
 EXTERNAL SOURCES:
   assets_audio_player:
@@ -36,6 +51,12 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_is_emulator:
     :path: ".symlinks/plugins/flutter_is_emulator/ios"
+  image_crop:
+    :path: ".symlinks/plugins/image_crop/ios"
+  image_cropper:
+    :path: ".symlinks/plugins/image_cropper/ios"
+  in_app_purchase:
+    :path: ".symlinks/plugins/in_app_purchase/ios"
   path_provider:
     :path: ".symlinks/plugins/path_provider/ios"
   shared_preferences:
@@ -49,10 +70,14 @@ SPEC CHECKSUMS:
   audioplayers: 455322b54050b30ea4b1af7cd9e9d105f74efa8c
   Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
   flutter_is_emulator: b1d882329a081ea30e0e335f1dbe782f5a34242a
+  image_crop: e0a67085d3ebf3cf46ca46d61c53a082507b0bc3
+  image_cropper: f1668dd8d2cad2d357955caad15a40547856edcb
+  in_app_purchase: 3e2155afa9d03d4fa32d9e62d567885080ce97d6
   path_provider: abfe2b5c733d04e238b0d8691db0cfd63a27a93c
   shared_preferences: af6bfa751691cdc24be3045c43ec037377ada40d
+  TOCropViewController: 3105367e808b7d3d886a74ff59bf4804e7d3ab38
   vibration: b5a33e764c3f609a975b9dca73dce20fdde627dc
 
-PODFILE CHECKSUM: 98b1b679b8627b4c0bcb04bf8cee3a67ee7745ca
+PODFILE CHECKSUM: aafe91acc616949ddb318b77800a7f51bffa2a4c
 
 COCOAPODS: 1.10.1

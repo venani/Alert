@@ -40,7 +40,10 @@ dependencies:
   auto_size_text: ^2.1.0
   assets_audio_player: ^2.0.14
   introduction_screen: ^2.0.0
-  lottie: ^0.6.0
+  image_cropper: ^1.4.0
+  image_crop: ^0.3.4
+  crop: ^0.5.0
+  in_app_purchase: ^0.5.1
 
 dev_dependencies:
   flutter_test:
@@ -91,24 +94,17 @@ flutter:
     - assets/images/files/TestSelectionScreen.png
     - assets/images/files/TestExerciserScreen.png
     - assets/sound/mind.mp3
-    - assets/sound/mind1.mp3
-    - assets/images/files/roses.jpg
-    - assets/images/files/halfpeacock.jpg
-    - assets/images/files/lightStore.jpg
-    - assets/images/files/balls.jpg
-    - assets/images/files/market.jpg
-    - assets/images/files/palace.jpg
-    - assets/images/files/skyScrapers.jpg
-    - assets/images/files/cheetah.jpg
-    - assets/images/files/rainbow.jpg
-    - assets/images/files/peacock.jpg
-    - packages/mindfulAlert/assets/images/files/roses.jpg
-    - packages/mindfulAlert/assets/images/files/halfpeacock.jpg
-    - packages/mindfulAlert/assets/images/files/lightStore.jpg
-    - packages/mindfulAlert/assets/images/files/balls.jpg
-    - packages/mindfulAlert/assets/images/files/market.jpg
-    - packages/mindfulAlert/assets/images/files/palace.jpg
-    - packages/mindfulAlert/assets/images/files/skyScrapers.jpg
-    - packages/mindfulAlert/assets/images/files/cheetah.jpg
-    - packages/mindfulAlert/assets/images/files/rainbow.jpg
-    - packages/mindfulAlert/assets/images/files/peacock.jpg
+    - packages/mindfulAlert/assets/images/files/skyScrappersW.jpg
+    - packages/mindfulAlert/assets/images/files/peacockW.jpg
+    - packages/mindfulAlert/assets/images/files/vaticanW.jpg
+    - packages/mindfulAlert/assets/images/files/rainbowW.jpg
+    - packages/mindfulAlert/assets/images/files/yosemiteW.jpg
+    - packages/mindfulAlert/assets/images/files/marketW.jpg
+    - packages/mindfulAlert/assets/images/files/palaceW.jpg
+    - packages/mindfulAlert/assets/images/files/lionW.jpg
+    - packages/mindfulAlert/assets/images/files/lightStoreW.jpg
+    - packages/mindfulAlert/assets/images/files/rosesW.jpg
+    - packages/mindfulAlert/assets/images/files/ancientStructureW.jpg
+    - packages/mindfulAlert/assets/images/files/cheetahW.jpg
+    - packages/mindfulAlert/assets/images/files/eiffelTowerW.jpg
+    - packages/mindfulAlert/assets/images/files/ballsW.jpg

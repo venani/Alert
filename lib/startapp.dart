@@ -28,7 +28,7 @@ class _StartAppState extends State<StartApp> {
     super.initState();
     String title = "Welcome";
     String info =  "This fun Mindfulness App helps with exercising your alertness capability by allowing you to work on a task while being alert "
-        "to events to your vision, touch and hearing senses. \n\n"
+        "to the events sent to your vision, touch and hearing senses. \n\n"
         "For details on how to use the App, click on 'Test Details', after clicking anywhere on this dialog.";
     Timer(Duration(milliseconds: 200), () =>  Navigator.of(context).push(PageRouteBuilder(
         opaque: false,
