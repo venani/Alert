@@ -20,8 +20,9 @@ class StartApp extends StatefulWidget {
   _StartAppState createState() => _StartAppState();
 }
 class _StartAppState extends State<StartApp> {
-
+  static DateTime finalDate = DateTime.parse("2021-07-01 08:00:00");
   GlobalKey key = GlobalKey();
+  int daysSinceInstall = finalDate.difference(DateTime.now()).inDays;
 
   @override
   void initState()  {
@@ -98,16 +99,20 @@ class _StartAppState extends State<StartApp> {
                         elevation: 10,
                         onPressed: () async {
                           bool temp = await Vibration.hasVibrator();
-                          print ('Vibration capability $temp');
+                          print ('Vibration capability $temp $daysSinceInstall');
                           bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
-                          if (await Vibration.hasVibrator() || simulator) {
+                          if (-1 * daysSinceInstall < 0) {
+                            print ('Reached here');
+                            showDialog(context: context, 
+                                builder: (BuildContext context) => CommonDialogs.popupDialog(context, "App has expired", ""));
+                                }
+                          else if (await Vibration.hasVibrator() || simulator) {
                             Navigator.push(context,
                                 MaterialPageRoute(builder: (context) =>
                                     MyHomePage(
                                         title: "Exerciser",
                                         levelNumber: (index + 1)))).then((value) => setState(() {}));
-                          }
-                          else {
+                          } else {
                             Widget okButton = TextButton(
                               child: Text("Ok", style: TextStyle(color:Colors.white)),
                               style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
@@ -175,6 +180,11 @@ class _StartAppState extends State<StartApp> {
               ),
             ),
             Expanded(
+              flex: 1,
+              child: Text('Days left ${daysSinceInstall}', style: TextStyle(color: Colors.red,
+                  fontWeight: FontWeight.bold, fontSize: 30)),
+            ),
+            Expanded(
               flex: 3,
               child: Center(
                 child: Row (
@@ -216,8 +226,8 @@ class _StartAppState extends State<StartApp> {
                       child: FloatingActionButton.extended(
                           label:  Column(
                             children: [
-                              Text("Reset"),
-                              Text("Levels"),
+                              Text("Clear"),
+                              Text("History"),
                             ],
                           ),
                           backgroundColor: Colors.blue,
