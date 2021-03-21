@@ -103,7 +103,7 @@ class _StartAppState extends State<StartApp> {
                           bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
                           if (-1 * daysSinceInstall < 0) {
                             print ('Reached here');
-                            showDialog(context: context, 
+                            showDialog(context: context,
                                 builder: (BuildContext context) => CommonDialogs.popupDialog(context, "App has expired", ""));
                                 }
                           else if (await Vibration.hasVibrator() || simulator) {
