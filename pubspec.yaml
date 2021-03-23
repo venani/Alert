@@ -30,7 +30,6 @@ dependencies:
   flutter_custom_clippers: ^1.1.2
   image: ^2.1.19
   vibration: ^1.7.3
-  audioplayers: ^0.17.4
   shared_preferences: ^0.5.12+4
   provider: ^3.0.0+1
   get: ^3.25.6
@@ -38,12 +37,13 @@ dependencies:
   date_format: ^1.0.9
   intl: ^0.17.0
   auto_size_text: ^2.1.0
-  assets_audio_player: ^2.0.14
+  assets_audio_player: ^2.0.15
   introduction_screen: ^2.0.0
   image_cropper: ^1.4.0
   image_crop: ^0.3.4
   crop: ^0.5.0
   in_app_purchase: ^0.5.1
+
 
 dev_dependencies:
   flutter_test:
