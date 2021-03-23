@@ -11,8 +11,6 @@ import 'package:image/image.dart' as img;
 import 'dart:typed_data';
 import 'lights.dart';
 import 'package:vibration/vibration.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:audioplayers/audio_cache.dart';
 import 'vibColumn.dart';
 import 'dart:math';
 import 'level.dart';
@@ -27,17 +25,24 @@ import 'puzzleFile.dart';
 import 'Scores.dart';
 import 'package:image_crop/image_crop.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'vibColumn.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  InAppPurchaseConnection.enablePendingPurchase;
+  //InAppPurchaseConnection.enablePendingPurchase;
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Storage.getStorage();
   await LevelHistory.loadLevelHistory();
   await PuzzleFiles.getLastSelection();
+  await vibrationHardwareCheck();
   PuzzleFiles.puzzleFiles.shuffle(Random(DateTime.now().second)) ;
   runApp(MindfullnessAlertExcerciserApp());
+}
+
+Future<void> vibrationHardwareCheck () async {
+  VibSoundCorridor.vibrationHardwareIsPresent = await Vibration.hasVibrator();
+  print ('Vibration Hardware is present - ${VibSoundCorridor.vibrationHardwareIsPresent}');
 }
 
 class MyHomePage extends StatefulWidget {
@@ -79,8 +84,6 @@ class _MyHomePageState extends State<MyHomePage> {
   bool timeRemainingStatus = false;
   ui.Size imageSize;
   Uint8List byteList;
-  AudioCache audioCache = AudioCache();
-  AudioPlayer audioPlayer;
   bool isPlaying = false;
   bool isPaused = false;
   double timerBarValue = 0.0;
@@ -93,7 +96,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String  lightCount = '0/0';
   String  vibrationCount = '0/0';
   String  soundCount = '0/0';
-  String  gameStatus = 'Start the test';
+  String  gameStatus = 'Start';
   int rows = 0;
   int cols = 0;
   int lightRate = 0;
@@ -109,6 +112,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Choreographer choreography;
   List<Piece> lowerPieces;
   bool needToReshuffle = true;
+  Size puzzleSize;
 
   void setBackgroundOpacity(double opacity) {
     pieces[0].state.setOpacity(opacity);
@@ -328,7 +332,6 @@ class _MyHomePageState extends State<MyHomePage> {
     await getVibSoundCorridorSize();
     await getTimerBarSize();
 
-    Size puzzleSize;
     setState(() {
       puzzleSize = puzzleKey.currentContext.size;
       print ('Puzzle size is ${puzzleSize.width} ${puzzleSize.height}');
@@ -351,8 +354,11 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     });
 
-    choreography = Choreographer(lightCorridor: lightCorridor, vibSoundCorridor: vibSoundCorridor, homePage: widget);
+    setPicture();
+  }
 
+  void setPicture() async {
+    choreography = Choreographer(lightCorridor: lightCorridor, vibSoundCorridor: vibSoundCorridor, homePage: widget);
     String fileName = await PuzzleFiles.getRandomPuzzleFile();
     String backgroundFile = "/assets/images/files/" +  fileName +  ".jpg";
     backgroundImage = await createImageFromFile(backgroundFile, puzzleSize);
@@ -417,10 +423,10 @@ class _MyHomePageState extends State<MyHomePage> {
 //    double extraSpace =
 //        2.0 * pieces[0].xCenterOffset / (cols - 1);
     for (int y = 0; y < rows; y++) {
-        for (int x = 0; x < cols; x++) {
-          int index = x  + y*cols;
-          tempList2[index].left += ((x - tempList2[index].col) * tempList2[index].pieceSize.width/2);
-          tempList2[index].top += ((y - tempList2[index].row) * tempList2[index].pieceSize.height/2);
+      for (int x = 0; x < cols; x++) {
+        int index = x  + y*cols;
+        tempList2[index].left += ((x - tempList2[index].col) * tempList2[index].pieceSize.width/2);
+        tempList2[index].top += ((y - tempList2[index].row) * tempList2[index].pieceSize.height/2);
       }
     }
 
@@ -573,7 +579,7 @@ class _MyHomePageState extends State<MyHomePage> {
           choreography.timelinePaused = true;
           await okDialog('Please press Cancel to abort Test');
           choreography.timelinePaused = false;
-          Future.value(false);
+          return Future.value(false);
         }
       },
       child: Scaffold(
@@ -581,6 +587,7 @@ class _MyHomePageState extends State<MyHomePage> {
           appBar: AppBar(
             //Here we take the value from the MyHomePage object that was created by
             //the App.build method, and use it to set our appbar title.
+            centerTitle: true,
             title: Text(widget.title),
 //            backgroundColor: Colors.black,
           ),
@@ -663,28 +670,53 @@ class _MyHomePageState extends State<MyHomePage> {
 //                         Spacer(flex: 1),
                           Padding(
                             padding: const EdgeInsets.only(top: 4.0),
-                            child: FloatingActionButton.extended(onPressed: () async {
-                              bool simulator = await FlutterIsEmulator
-                                  .isDeviceAnEmulatorOrASimulator;
-                              print("The simulator is active $simulator");
-                              if (await Vibration.hasVibrator() || simulator) {
-                                if (choreography.isReady()) {
-                                  choreography.setStatusToProgress();
-                                } else if (choreography.isProgressing()) {
-                                  choreography.timelinePaused = true;
-                                  showDialog(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (BuildContext context) {
-                                        return doYouWantToCancel();
-                                      }
-                                  );
-                                }
-                              } else {
-                                okDialog('Vibration capabilityRequired');
-                              }
-                            },
-                              label: Text('$gameStatus'), //shape: RoundedRectangleBorder(),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                FloatingActionButton.extended(
+                                  heroTag: 'contact777',
+                                  onPressed: () async {
+                                    if (choreography.isReady()) {
+                                      choreography.setStatusToProgress();
+                                    } else if (choreography.isProgressing()) {
+                                      choreography.timelinePaused = true;
+                                      showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (BuildContext context) {
+                                            return doYouWantToCancel();
+                                          }
+                                      );
+                                    }
+                                },
+                                  label: Text('$gameStatus'), //shape: RoundedRectangleBorder(),
+                                ),
+                                FloatingActionButton.extended (label: Text('Change Pic'),
+                                    heroTag: 'contact555',
+                                    onPressed: () async {
+                                  if (choreography.isReady()) {
+                                    int curLevel = choreography.level;
+                                    choreography = null;
+                                    choreography = Choreographer(
+                                        lightCorridor: lightCorridor,
+                                        vibSoundCorridor: vibSoundCorridor,
+                                        homePage: widget);
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pop();
+                                    Navigator.push(context,
+                                        MaterialPageRoute(builder: (context) =>
+                                            MyHomePage(
+                                                title: "Exerciser",
+                                                levelNumber: (curLevel))))
+                                        .then((value) => setState(() {}));
+                                  } else  {
+                                    choreography.timelinePaused = true;
+                                    await okDialog('The Picture cannot be changed while the test is in progress.');
+                                    choreography.timelinePaused = false;
+                                  }
+                                }),
+                              ],
                             ),
                           ),
 //                        Spacer(flex: 1)
@@ -709,22 +741,22 @@ class MindfullnessAlertExcerciserApp extends StatefulWidget {
 }
 
 class _MindfullnessAlertExcerciserAppState extends State<MindfullnessAlertExcerciserApp> {
-  StreamSubscription<List<PurchaseDetails>> _subscription;
+  //StreamSubscription<List<PurchaseDetails>> _subscription;
 
   @override
   void initState() {
-    final Stream purchaseUpdates =
-        InAppPurchaseConnection.instance.purchaseUpdatedStream;
-    _subscription = purchaseUpdates.listen((purchases) {
-      // _handlePurchaseUpdates(purchases);
-    });
+    // final Stream purchaseUpdates =
+    //     InAppPurchaseConnection.instance.purchaseUpdatedStream;
+    // _subscription = purchaseUpdates.listen((purchases) {
+    //   // _handlePurchaseUpdates(purchases);
+   // });
     super.initState();
   }
 
   @override
   void dispose() {
-    _subscription.cancel();
-    super.dispose();
+    //_subscription.cancel();
+    //super.dispose();
   }
 
   // final bool available = await InAppPurchaseConnection.instance.isAvailable();

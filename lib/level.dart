@@ -193,9 +193,9 @@ class Level
        case 79 : complexity = 48; break;
        case 80 : complexity = 49; break;
        case 81 : complexity = 50; break;
-       case 82 : complexity = 49; break;
-       case 83 : complexity = 50; break;
-       case 84 : complexity = 51; break;
+       case 82 : complexity = 48; break;
+       case 83 : complexity = 49; break;
+       case 84 : complexity = 50; break;
       default : complexity = 52;
     }
     return complexity;
@@ -289,7 +289,7 @@ class Level
 
   static int getTotalTestTime (int levelNumber) {
     double eventComplexity = getTestComplexity(levelNumber);
-    return (getBasicTestTime(levelNumber) + getNumberOfEvents(levelNumber)).toInt();
+    return (getBasicTestTime(levelNumber) + 1.5*getNumberOfEvents(levelNumber)).toInt();
   }
 
   static int getNumberOfPieces(String puzzleSize) {

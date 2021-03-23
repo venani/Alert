@@ -17,21 +17,21 @@ class _IntroductoryScreenState extends State<IntroductoryScreen> {
 
   List<PageViewModel> getPages() {
     String body = 'A key aspect of being mindful is paying attention to your mind and senses. '
-        'This app simulates that experience  by giving a task to keep the mind busy and while the task is going on, '
-        'the senses, vision, hearing and touch, need paying attention to. \n\nThe task is to put a puzzle back together, '
+        'This app simulates that experience by giving a task to keep the mind busy and while the task is going on, '
+        'you will tasked with paying attention to your vision, hearing and touch senses. \n\nThe task is to put a puzzle back together, '
         'while paying attention to the events associated with the senses, light for the vision sense, music for the '
-        'hearing sense and vibration for the touch sense. To acknowledge that one is paying attention, '
-        'one has to click the respective buttons: ';
+        'hearing sense and vibration for the touch sense. To required feedback to acknolwledge that one has paid attention, '
+        'to an event is by clicking on the respective button: ';
     String body1 = '\nlight button - , ';
     String body2 = '\nsound button -  ';
     String body3 = '\nand vibration button - ';
     String body4 =   '\n\nThere is time limit within which the puzzle should be put back together.'
         'The goal is to complete the puzzle within the alloted time and to not miss the events i.e. clicking '
         'the buttons in a timely manner, within two seconds of the event occuring. The Test will complete either when '
-        'the puzzle has been completed or time has run out. The user can also cancel at any time.';
-    String body5 =     '\nPuzzles to be solved vary in complexity from 2x2 to 5x5 and the number of events to pay attention '
-        'to also change starting from 3. Each combination of a puzzle and set of events is called a Test. More '
-        'often than not the higher the Test number the more the difficulty but that might always be true as '
+        'the puzzle has been completed or when the alloted time has run out. The user can also cancel at any time.';
+    String body5 =     '\nPuzzles to be solved vary in complexity from 2x2 to 6x5 and the number of events to pay attention '
+        'to also change starting from 4 to 50. Each combination of a puzzle and a set of events is called a Test. More '
+        'often than not the higher the Test number the more the difficult the Test is but that might not always be true as '
         'sometimes a lower numbered Test might be more challenging.';
     String body8 = 'Below is an example of the Test Selection Screen, in which each box represents a test. Each box contains:';
     String body9 = '\n-Test Number\n-Size of the puzzle\n-Number of events\n-Status\n ';
@@ -58,10 +58,11 @@ class _IntroductoryScreenState extends State<IntroductoryScreen> {
     String body15 = '\nAs the buttons are clicked the associated field in the top row gets updated. The information displayed is of the form: \n';
     String body16 = '5/12';
     String body17 = 'The numerator stands for the number of user clicks made in a timely manner i.e. within two seconds of the event occuring and the denominator'
-        ' stands for the total of events that have occured. Using the above example 7 clicks have been missed.';
+        ' stands for the total of events that have occured. Using the above example 7 (12 - 5) clicks have been missed.'
+        'Only one puzzle piece can be worked on at a time.';
     String body18 = '\nScores History';
     String body19 = ': Lists the last 50 results of the tests.';
-    String body20 = '\n\nReset Levels';
+    String body20 = '\n\Clear History';
     String body21 = ': Removes the history maintained of the Tests that were run .';
 
         return [
@@ -99,11 +100,11 @@ class _IntroductoryScreenState extends State<IntroductoryScreen> {
             ),
             TextSpan(text: body10),
             TextSpan(text: body11, style: TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: body110, style: TextStyle(backgroundColor: Colors.black, color: Colors.blue, fontWeight: FontWeight.bold)),
+            TextSpan(text: body110, style: TextStyle(backgroundColor: Colors.transparent, color: Colors.blue, fontWeight: FontWeight.bold)),
             TextSpan(text: body111),
-            TextSpan(text: body112, style: TextStyle(backgroundColor: Colors.black, color: Colors.yellow, fontWeight: FontWeight.bold)),
+            TextSpan(text: body112, style: TextStyle(backgroundColor: Colors.transparent, color: Colors.yellow, fontWeight: FontWeight.bold)),
             TextSpan(text: body113),
-            TextSpan(text: body114, style: TextStyle(backgroundColor: Colors.black, color: Colors.green, fontWeight: FontWeight.bold)),
+            TextSpan(text: body114, style: TextStyle(backgroundColor: Colors.transparent, color: Colors.green, fontWeight: FontWeight.bold)),
             TextSpan(text: body115),
             TextSpan(text: body116, style: TextStyle(backgroundColor: Colors.yellow, color: Colors.black, fontWeight: FontWeight.bold)),
     ]),

@@ -63,6 +63,7 @@ class Choreographer
   int beginVibKey = 0;
   int beginSoundKey = 0;
   String readyText = "Start the test";
+  bool vibrationIsAvailable = false;
 
   Choreographer ({this.lightCorridor, this.vibSoundCorridor, this.homePage}) {
     lightCorridor.setCallback(LightCallback);
@@ -637,7 +638,7 @@ class Timeline {
         list[curTotalUnitTime] = TimeLineEntries.LightEntry;
         lightsTurn = false;
       } else {
-        if (vibsTurn) {
+        if (vibsTurn && VibSoundCorridor.vibrationHardwareIsPresent) {
           list[curTotalUnitTime] = TimeLineEntries.VibrationEntry;
           vibsTurn = false;
         } else {

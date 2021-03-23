@@ -57,7 +57,8 @@ class _StartAppState extends State<StartApp> {
   Widget build(BuildContext context) {
     return Scaffold (
         backgroundColor: Color(0xFF01579B) ,
-        appBar: AppBar(title: Text("Alertness Exerciser"),),
+
+        appBar: AppBar(centerTitle: true, title: Text("Alertness Exerciser"),),
         body: Column(
           key: key,
           children: [
@@ -98,46 +99,46 @@ class _StartAppState extends State<StartApp> {
                         (LevelHistory.levelHistory[index] == LevelHistory.notStarted) ? Colors.blue : Colors.yellowAccent,
                         elevation: 10,
                         onPressed: () async {
-                          bool temp = await Vibration.hasVibrator();
-                          print ('Vibration capability $temp $daysSinceInstall');
-                          bool simulator = await FlutterIsEmulator.isDeviceAnEmulatorOrASimulator;
-                          if (-1 * daysSinceInstall < 0) {
-                            print ('Reached here');
-                            showDialog(context: context,
-                                builder: (BuildContext context) => CommonDialogs.popupDialog(context, "App has expired", ""));
-                                }
-                          else if (await Vibration.hasVibrator() || simulator) {
+                          if (daysSinceInstall < 0) {
+                            Widget okButton = TextButton(
+                              child: Text(
+                                  "Ok", style: TextStyle(color: Colors.white)),
+                              style: ButtonStyle(
+                                  backgroundColor: MaterialStateProperty.all<
+                                      Color>(Colors.black)),
+                              onPressed: () {
+                                Navigator.of(context, rootNavigator: true)
+                                    .pop();
+                              },
+                            );
+                            await showDialog(context: context,
+                                builder: (BuildContext context) {
+                                  return
+                                    AlertDialog(
+                                      title: Center(
+                                          child: Text("App has expired")),
+                                      backgroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                              18.0),
+                                          side: BorderSide(
+                                              color: Colors.black)),
+                                      content: Text(
+                                          ""),
+                                      actions: [
+                                        okButton,
+                                      ],
+                                    );
+                                  ;
+                                });
+                          }
+                          else {
                             Navigator.push(context,
                                 MaterialPageRoute(builder: (context) =>
                                     MyHomePage(
                                         title: "Exerciser",
-                                        levelNumber: (index + 1)))).then((value) => setState(() {}));
-                          } else {
-                            Widget okButton = TextButton(
-                              child: Text("Ok", style: TextStyle(color:Colors.white)),
-                              style: ButtonStyle(backgroundColor: MaterialStateProperty.all<Color>(Colors.black)),
-                              onPressed: () {
-                                Navigator.of(context, rootNavigator: true).pop();
-                              },
-                            );
-                            AlertDialog alert = AlertDialog(
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18.0),
-                                  side: BorderSide(color: Colors.black)
-                              ),
-                              title: Text('Needs vibration capability'),
-                              //content: Container(color: Colors.blue, child: Text("")),
-                              actions: [
-                                okButton,
-                              ],
-                            );
-                            await showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (BuildContext context) {
-                                  return alert;
-                                });
+                                        levelNumber: (index + 1)))).then((
+                                value) => setState(() {}));
                           }
                         },
                         heroTag: 'thecontact$index',
@@ -181,7 +182,7 @@ class _StartAppState extends State<StartApp> {
             ),
             Expanded(
               flex: 1,
-              child: Text('Days left ${daysSinceInstall}', style: TextStyle(color: Colors.red,
+              child: Text('Days left - ${daysSinceInstall}', style: TextStyle(color: Colors.red,
                   fontWeight: FontWeight.bold, fontSize: 30)),
             ),
             Expanded(
